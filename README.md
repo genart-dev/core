@@ -178,6 +178,10 @@ All types and functions from `@genart-dev/format` are re-exported: `parseGenart`
 | [`@genart-dev/format`](https://github.com/genart-dev/format) | File format types, parsers, presets (dependency) |
 | [`@genart-dev/mcp-server`](https://github.com/genart-dev/mcp-server) | 33-tool MCP server + CLI (depends on core) |
 
+## Support
+
+Questions, bugs, or feedback — [support@genart.dev](mailto:support@genart.dev) or [open an issue](https://github.com/genart-dev/core/issues).
+
 ## License
 
 MIT
