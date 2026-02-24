@@ -602,7 +602,7 @@ export function generateWebGLCompositorCode(): string {
 
     function __setupCompositePass(gl) {
       var vs = gl.createShader(gl.VERTEX_SHADER);
-      gl.shaderSource(vs, '#version 300 es\\nin vec2 a_position;out vec2 v_uv;void main(){v_uv=a_position*0.5+0.5;gl_Position=vec4(a_position,0,1);}');
+      gl.shaderSource(vs, '#version 300 es\\nin vec2 a_position;out vec2 v_uv;void main(){v_uv=vec2(a_position.x*0.5+0.5,0.5-a_position.y*0.5);gl_Position=vec4(a_position,0,1);}');
       gl.compileShader(vs);
       var fs = gl.createShader(gl.FRAGMENT_SHADER);
       gl.shaderSource(fs, '#version 300 es\\nprecision highp float;uniform sampler2D u_layers;in vec2 v_uv;out vec4 fragColor;void main(){vec4 c=texture(u_layers,v_uv);fragColor=c;}');
