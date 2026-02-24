@@ -24,6 +24,47 @@ export type {
   SketchInstance,
 } from "./types.js";
 
+// Design plugin types
+export type {
+  DesignPlugin,
+  LayerTypeDefinition,
+  LayerCategory,
+  LayerPropertySchema,
+  LayerPropertyType,
+  LayerPropertyValue,
+  PointValue,
+  SizeValue,
+  FontValue,
+  PathValue,
+  PathPoint,
+  GradientValue,
+  GradientStop,
+  SelectOption,
+  LayerProperties,
+  LayerBounds,
+  ValidationError,
+  DesignToolDefinition,
+  ToolSection,
+  DesignPointerEvent,
+  ToolContext,
+  ExportHandlerDefinition,
+  McpToolDefinition,
+  McpToolContext,
+  McpToolResult,
+  McpToolContent,
+  DesignChangeType,
+  MutableDesignLayer,
+  LayerStackAccessor,
+  SketchStateAccessor,
+  PluginContext,
+  PluginLogger,
+  PluginHostInfo,
+  RenderResources,
+  PluginRegistry,
+  PrefixedMcpTool,
+  JsonSchema,
+} from "./types/design-plugin.js";
+
 // Renderer adapters
 export {
   P5RendererAdapter,
@@ -47,3 +88,10 @@ export {
   COMPOSITION_SKILLS,
   COLOR_SKILLS,
 } from "./skill/index.js";
+
+// Design plugin system
+export {
+  createPluginRegistry,
+  createLayerStack,
+  compositeDesignLayers,
+} from "./design/index.js";

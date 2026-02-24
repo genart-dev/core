@@ -14,6 +14,7 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
+import { generateCompositorScript, generateWebGLCompositorCode } from "../../design/iframe-compositor.js";
 
 /** Built-in uniforms that are not mapped from user parameters. */
 const BUILTIN_UNIFORMS = new Set([
@@ -605,10 +606,13 @@ ${colorBindings}
       gl.bindVertexArray(vao);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       gl.bindVertexArray(null);
+      ${sketch.layers && sketch.layers.length > 0 ? `__compositeLayersWebGL(gl, ${width}, ${height});` : ""}
       requestAnimationFrame(render);
     }
+    ${sketch.layers && sketch.layers.length > 0 ? generateWebGLCompositorCode() : ""}
     render();
   </script>
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
 </body>
 </html>`;
   }

@@ -14,6 +14,7 @@ import type {
   RuntimeDependency,
 } from "../../types.js";
 import { extractComponentCode } from "./component-utils.js";
+import { generateCompositorScript } from "../../design/iframe-compositor.js";
 
 const P5_CDN_VERSION = "1.11.3";
 const P5_CDN_URL = `https://cdnjs.cloudflare.com/ajax/libs/p5.js/${P5_CDN_VERSION}/p5.min.js`;
@@ -301,8 +302,20 @@ export class P5RendererAdapter implements RendererAdapter {
 
     new p5(function(p) {
       sketch(p, state);
+      ${sketch.layers && sketch.layers.length > 0 ? `// Composite design layers after initial p5 setup
+      var __origSetup = p.setup;
+      if (__origSetup) {
+        p.setup = function() {
+          __origSetup.call(p);
+          setTimeout(function() {
+            var c = document.querySelector('#canvas-container canvas');
+            if (c && window.__genart_compositeLayers) window.__genart_compositeLayers(c);
+          }, 0);
+        };
+      }` : ""}
     }, document.getElementById('canvas-container'));
   </script>
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
 </body>
 </html>`;
   }

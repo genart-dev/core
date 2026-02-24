@@ -14,6 +14,7 @@ import type {
   RuntimeDependency,
 } from "../../types.js";
 import { extractComponentCode } from "./component-utils.js";
+import { generateSVGLayerScript } from "../../design/iframe-compositor.js";
 
 /**
  * Compiled SVG algorithm — wraps the algorithm source string
@@ -251,6 +252,7 @@ export class SVGRendererAdapter implements RendererAdapter {
     const svgString = module.generate ? module.generate() : module.initializeSystem();
     document.getElementById('svg-container').innerHTML = svgString;
   </script>
+  ${sketch.layers && sketch.layers.length > 0 ? generateSVGLayerScript(sketch.layers) : ""}
 </body>
 </html>`;
   }

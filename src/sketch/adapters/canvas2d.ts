@@ -14,6 +14,7 @@ import type {
   RuntimeDependency,
 } from "../../types.js";
 import { extractComponentCode } from "./component-utils.js";
+import { generateCompositorScript, generateCompositorCall } from "../../design/iframe-compositor.js";
 
 /**
  * Compiled Canvas 2D algorithm — wraps the algorithm source string
@@ -284,6 +285,7 @@ export class Canvas2DRendererAdapter implements RendererAdapter {
       ${pixelDensity !== 1 ? `ctx.scale(${pixelDensity}, ${pixelDensity});` : ""}
       const module = sketch(ctx, state);
       if (module && module.initializeSystem) module.initializeSystem();
+      ${sketch.layers && sketch.layers.length > 0 ? generateCompositorCall() : ""}
     } catch (e) {
       document.body.style.background = '#300';
       document.body.style.color = '#f88';
@@ -293,6 +295,7 @@ export class Canvas2DRendererAdapter implements RendererAdapter {
       document.body.textContent = 'Sketch error: ' + e.message;
     }
   </script>
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
 </body>
 </html>`;
   }

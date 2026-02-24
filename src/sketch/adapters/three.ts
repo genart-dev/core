@@ -14,6 +14,7 @@ import type {
   RuntimeDependency,
 } from "../../types.js";
 import { extractComponentCode } from "./component-utils.js";
+import { generateCompositorScript, generateWebGLCompositorCode } from "../../design/iframe-compositor.js";
 
 const THREE_CDN_VERSION = "0.172.0";
 const THREE_CDN_URL = `https://cdn.jsdelivr.net/npm/three@${THREE_CDN_VERSION}/build/three.module.min.js`;
@@ -284,8 +285,24 @@ export class ThreeRendererAdapter implements RendererAdapter {
     ${extractComponentCode(sketch.components)}
     ${sketch.algorithm}
 
-    sketch(THREE, state, document.getElementById('canvas-container'));
+    const __container = document.getElementById('canvas-container');
+    sketch(THREE, state, __container);
+    ${sketch.layers && sketch.layers.length > 0 ? `
+    // Composite design layers onto the Three.js canvas via Canvas→Texture
+    ${generateWebGLCompositorCode()}
+    function __threeCompositeLoop() {
+      requestAnimationFrame(__threeCompositeLoop);
+      var c = __container.querySelector('canvas');
+      if (c) {
+        var gl = c.getContext('webgl2') || c.getContext('webgl');
+        if (gl) __compositeLayersWebGL(gl, ${width}, ${height});
+      }
+    }
+    // Delay start to let Three.js initialize
+    setTimeout(__threeCompositeLoop, 100);
+    ` : ""}
   </script>
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
 </body>
 </html>`;
   }
