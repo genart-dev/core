@@ -6,6 +6,7 @@ import type {
   ParamDef,
   ColorDef,
 } from "@genart-dev/format";
+import type { ResolvedComponent } from "@genart-dev/components";
 
 // ---------------------------------------------------------------------------
 // Skills (Design Knowledge System)
@@ -96,8 +97,9 @@ export interface RendererAdapter {
 
   /** Validate algorithm source without executing it. */
   validate(algorithm: string): ValidationResult;
-  /** Compile an algorithm string into a runnable form. */
-  compile(algorithm: string): Promise<CompiledAlgorithm>;
+  /** Compile an algorithm string into a runnable form.
+   *  @param components — Pre-resolved component source to prepend (from resolveComponents). */
+  compile(algorithm: string, components?: ResolvedComponent[]): Promise<CompiledAlgorithm>;
   /** Create a live sketch instance from compiled algorithm + state. */
   createInstance(
     compiled: CompiledAlgorithm,

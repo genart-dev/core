@@ -149,6 +149,51 @@ describe("GLSLRendererAdapter", () => {
       expect(compiled.uniformNames.params).toHaveLength(0);
     });
 
+    it("compiles with GLSL component code injected after directives", async () => {
+      const components = [
+        {
+          name: "glsl-noise",
+          version: "1.0.0",
+          code: "float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }",
+          exports: ["hash"],
+        },
+      ];
+      const compiled = (await adapter.compile(`
+        #version 300 es
+        precision highp float;
+        uniform vec2 u_resolution;
+        out vec4 fragColor;
+        void main() {
+          vec2 uv = gl_FragCoord.xy / u_resolution;
+          float n = hash(uv * 10.0);
+          fragColor = vec4(vec3(n), 1.0);
+        }
+      `, components)) as { fragmentSource: string };
+
+      // Component code must appear after #version and precision
+      const src = compiled.fragmentSource;
+      const versionIdx = src.indexOf("#version 300 es");
+      const precisionIdx = src.indexOf("precision highp float");
+      const componentIdx = src.indexOf("glsl-noise v1.0.0");
+      const mainIdx = src.indexOf("void main()");
+
+      expect(versionIdx).toBeLessThan(precisionIdx);
+      expect(precisionIdx).toBeLessThan(componentIdx);
+      expect(componentIdx).toBeLessThan(mainIdx);
+      expect(src).toContain("float hash(vec2 p)");
+    });
+
+    it("compile still works without components (backward compat)", async () => {
+      const compiled = (await adapter.compile(`
+        #version 300 es
+        precision highp float;
+        out vec4 fragColor;
+        void main() { fragColor = vec4(1.0); }
+      `)) as { fragmentSource: string };
+      expect(compiled.fragmentSource).toContain("#version 300 es");
+      expect(compiled.fragmentSource).toContain("void main()");
+    });
+
     it("returns vertex and fragment sources", async () => {
       const compiled = (await adapter.compile(`
         #version 300 es
@@ -232,6 +277,44 @@ void main() {
       // No external CDN
       expect(html).not.toContain("cdnjs.cloudflare.com");
       expect(html).not.toContain("cdn.jsdelivr.net");
+    });
+
+    it("includes GLSL component code in standalone HTML", () => {
+      const sketch = {
+        genart: "1.2",
+        id: "test-glsl-comp",
+        title: "GLSL Component Test",
+        created: "2025-01-01T00:00:00Z",
+        modified: "2025-01-01T00:00:00Z",
+        renderer: { type: "glsl" as const },
+        canvas: { width: 800, height: 800 },
+        parameters: [],
+        colors: [],
+        components: {
+          "glsl-noise": {
+            version: "1.0.0",
+            code: "float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }",
+            exports: ["hash"],
+          },
+        },
+        state: { seed: 42, params: {}, colorPalette: [] },
+        algorithm: `#version 300 es
+precision highp float;
+uniform vec2 u_resolution;
+out vec4 fragColor;
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float n = hash(uv * 10.0);
+  fragColor = vec4(vec3(n), 1.0);
+}`,
+      };
+
+      const html = adapter.generateStandaloneHTML(sketch);
+      expect(html).toContain("float hash(vec2 p)");
+      expect(html).toContain("glsl-noise v1.0.0");
+      // Component code should be in the fragment shader, after precision
+      const fragSrcStart = html.indexOf("const fragSrc");
+      expect(fragSrcStart).toBeGreaterThan(0);
     });
 
     it("escapes HTML in title", () => {

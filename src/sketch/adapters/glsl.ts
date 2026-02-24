@@ -3,7 +3,9 @@ import type {
   SketchState,
   CanvasSpec,
   SketchDefinition,
+  SketchComponentValue,
 } from "@genart-dev/format";
+import type { ResolvedComponent } from "@genart-dev/components";
 import type {
   RendererAdapter,
   ValidationResult,
@@ -80,6 +82,70 @@ function extractUniforms(source: string): {
 }
 
 /**
+ * Inject raw GLSL source into a shader, after #version and precision directives.
+ */
+function injectGLSLSource(algorithm: string, codeToInject: string): string {
+  if (!codeToInject) return algorithm;
+
+  // Trim leading whitespace — GLSL sources often arrive with indentation
+  const trimmed = algorithm.trimStart();
+
+  // Extract #version line
+  const versionMatch = trimmed.match(/^(#version\s+\S+[^\n]*\n)/);
+  const versionLine = versionMatch?.[1] ?? '';
+  let shaderBody = versionMatch ? trimmed.slice(versionLine.length) : trimmed;
+
+  // Extract precision statement(s) — may also have leading whitespace per line
+  const precisionLines: string[] = [];
+  let precisionMatch: RegExpMatchArray | null;
+  while ((precisionMatch = shaderBody.match(/^\s*(precision\s+\w+\s+\w+;\s*\n)/)) !== null) {
+    precisionLines.push(precisionMatch[1]!);
+    shaderBody = shaderBody.slice(precisionMatch[0]!.length);
+  }
+
+  // Reassemble: version → precision → injected code → user shader
+  return versionLine + precisionLines.join('') + '\n'
+    + codeToInject + '\n\n'
+    + shaderBody;
+}
+
+/**
+ * Inject GLSL component code into a shader source from resolved components.
+ */
+function injectGLSLComponents(
+  algorithm: string,
+  components?: ResolvedComponent[],
+): string {
+  if (!components || components.length === 0) return algorithm;
+
+  const componentCode = components.map(c =>
+    `// --- ${c.name} v${c.version} ---\n${c.code}`
+  ).join('\n\n');
+
+  return injectGLSLSource(algorithm, componentCode);
+}
+
+/**
+ * Extract GLSL component code from SketchDefinition.components for standalone HTML.
+ * Returns assembled GLSL source (no directives — caller handles placement).
+ */
+function extractGLSLComponentCode(
+  components?: Readonly<Record<string, SketchComponentValue>>,
+): string {
+  if (!components) return '';
+
+  const blocks: string[] = [];
+  for (const [name, value] of Object.entries(components)) {
+    if (typeof value === 'string') continue;
+    if (value.code) {
+      const ver = value.version ? ` v${value.version}` : '';
+      blocks.push(`// --- ${name}${ver} ---\n${value.code}`);
+    }
+  }
+  return blocks.join('\n\n');
+}
+
+/**
  * GLSL Renderer Adapter — full implementation.
  *
  * Validates GLSL fragment shaders, compiles them with a fullscreen quad
@@ -114,7 +180,7 @@ export class GLSLRendererAdapter implements RendererAdapter {
     return { valid: errors.length === 0, errors };
   }
 
-  async compile(algorithm: string): Promise<CompiledAlgorithm> {
+  async compile(algorithm: string, components?: ResolvedComponent[]): Promise<CompiledAlgorithm> {
     const validation = this.validate(algorithm);
     if (!validation.valid) {
       throw new Error(
@@ -122,10 +188,11 @@ export class GLSLRendererAdapter implements RendererAdapter {
       );
     }
 
-    const uniforms = extractUniforms(algorithm);
+    const fragmentSource = injectGLSLComponents(algorithm, components);
+    const uniforms = extractUniforms(fragmentSource);
 
     const compiled: GLSLCompiledAlgorithm = {
-      fragmentSource: algorithm,
+      fragmentSource,
       vertexSource: FULLSCREEN_QUAD_VERTEX,
       uniformNames: uniforms,
     };
@@ -443,8 +510,14 @@ export class GLSLRendererAdapter implements RendererAdapter {
     const pixelDensity = sketch.canvas.pixelDensity ?? 1;
     const stateJson = JSON.stringify(sketch.state, null, 2);
 
-    // Extract uniforms from the fragment shader for binding code
-    const uniforms = extractUniforms(sketch.algorithm);
+    // Assemble full fragment source with component code injected
+    const glslComponentCode = extractGLSLComponentCode(sketch.components);
+    const fullAlgorithm = glslComponentCode
+      ? injectGLSLSource(sketch.algorithm, glslComponentCode)
+      : sketch.algorithm;
+
+    // Extract uniforms from the full fragment shader for binding code
+    const uniforms = extractUniforms(fullAlgorithm);
     const paramBindings = uniforms.params
       .map((u) => {
         const key = u.substring(2); // strip u_ prefix
@@ -484,7 +557,7 @@ export class GLSLRendererAdapter implements RendererAdapter {
     const vertSrc = \`${FULLSCREEN_QUAD_VERTEX}\`;
 
     // Fragment shader
-    const fragSrc = \`${sketch.algorithm.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$/g, "\\$")}\`;
+    const fragSrc = \`${fullAlgorithm.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$/g, "\\$")}\`;
 
     function createShader(type, src) {
       const s = gl.createShader(type);

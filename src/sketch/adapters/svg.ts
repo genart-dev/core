@@ -4,6 +4,7 @@ import type {
   CanvasSpec,
   SketchDefinition,
 } from "@genart-dev/format";
+import type { ResolvedComponent } from "@genart-dev/components";
 import type {
   RendererAdapter,
   ValidationResult,
@@ -12,6 +13,7 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
+import { extractComponentCode } from "./component-utils.js";
 
 /**
  * Compiled SVG algorithm — wraps the algorithm source string
@@ -57,7 +59,7 @@ export class SVGRendererAdapter implements RendererAdapter {
     return { valid: true, errors: [] };
   }
 
-  async compile(algorithm: string): Promise<CompiledAlgorithm> {
+  async compile(algorithm: string, components?: ResolvedComponent[]): Promise<CompiledAlgorithm> {
     const validation = this.validate(algorithm);
     if (!validation.valid) {
       throw new Error(
@@ -65,8 +67,13 @@ export class SVGRendererAdapter implements RendererAdapter {
       );
     }
 
+    const componentCode = components?.map(c =>
+      `// --- ${c.name} v${c.version} ---\n${c.code}`
+    ).join('\n\n') ?? '';
+
     const wrappedSource = `
       return (function() {
+        ${componentCode}
         ${algorithm}
         return sketch;
       })();
@@ -237,6 +244,7 @@ export class SVGRendererAdapter implements RendererAdapter {
     const state = ${stateJson};
     state.canvas = { width: ${width}, height: ${height} };
 
+    ${extractComponentCode(sketch.components)}
     ${sketch.algorithm}
 
     const module = sketch(state);

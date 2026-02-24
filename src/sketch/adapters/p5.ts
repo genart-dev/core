@@ -4,6 +4,7 @@ import type {
   CanvasSpec,
   SketchDefinition,
 } from "@genart-dev/format";
+import type { ResolvedComponent } from "@genart-dev/components";
 import type {
   RendererAdapter,
   ValidationResult,
@@ -12,6 +13,7 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
+import { extractComponentCode } from "./component-utils.js";
 
 const P5_CDN_VERSION = "1.11.3";
 const P5_CDN_URL = `https://cdnjs.cloudflare.com/ajax/libs/p5.js/${P5_CDN_VERSION}/p5.min.js`;
@@ -64,7 +66,7 @@ export class P5RendererAdapter implements RendererAdapter {
     return { valid: errors.length === 0, errors };
   }
 
-  async compile(algorithm: string): Promise<CompiledAlgorithm> {
+  async compile(algorithm: string, components?: ResolvedComponent[]): Promise<CompiledAlgorithm> {
     const validation = this.validate(algorithm);
     if (!validation.valid) {
       throw new Error(
@@ -72,10 +74,15 @@ export class P5RendererAdapter implements RendererAdapter {
       );
     }
 
+    const componentCode = components?.map(c =>
+      `// --- ${c.name} v${c.version} ---\n${c.code}`
+    ).join('\n\n') ?? '';
+
     // Wrap the algorithm source into a factory function
     // The factory takes (p, state) and returns the sketch module
     const wrappedSource = `
       return (function() {
+        ${componentCode}
         ${algorithm}
         return sketch;
       })();
@@ -289,6 +296,7 @@ export class P5RendererAdapter implements RendererAdapter {
     state.PARAMS = state.params;
     state.COLORS = ${colorsJson};
 
+    ${extractComponentCode(sketch.components)}
     ${sketch.algorithm}
 
     new p5(function(p) {

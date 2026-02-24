@@ -89,6 +89,24 @@ describe("ThreeRendererAdapter", () => {
       ).rejects.toThrow("Three.js compilation failed");
     });
 
+    it("compiles with component code prepended", async () => {
+      const components = [
+        {
+          name: "prng",
+          version: "1.0.0",
+          code: "function mulberry32(a) { return function() { return 0.5; }; }",
+          exports: ["mulberry32"],
+        },
+      ];
+      const compiled = await adapter.compile(`
+        function sketch(THREE, state, container) {
+          const rng = mulberry32(state.seed);
+          return { initializeSystem() {}, dispose() {} };
+        }
+      `, components);
+      expect(compiled).toBeDefined();
+    });
+
     it("compiled factory is callable", async () => {
       const compiled = await adapter.compile(`
         function sketch(THREE, state, container) {

@@ -4,6 +4,7 @@ import type {
   CanvasSpec,
   SketchDefinition,
 } from "@genart-dev/format";
+import type { ResolvedComponent } from "@genart-dev/components";
 import type {
   RendererAdapter,
   ValidationResult,
@@ -12,6 +13,7 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
+import { extractComponentCode } from "./component-utils.js";
 
 const THREE_CDN_VERSION = "0.172.0";
 const THREE_CDN_URL = `https://cdn.jsdelivr.net/npm/three@${THREE_CDN_VERSION}/build/three.module.min.js`;
@@ -61,7 +63,7 @@ export class ThreeRendererAdapter implements RendererAdapter {
     return { valid: true, errors: [] };
   }
 
-  async compile(algorithm: string): Promise<CompiledAlgorithm> {
+  async compile(algorithm: string, components?: ResolvedComponent[]): Promise<CompiledAlgorithm> {
     const validation = this.validate(algorithm);
     if (!validation.valid) {
       throw new Error(
@@ -69,8 +71,13 @@ export class ThreeRendererAdapter implements RendererAdapter {
       );
     }
 
+    const componentCode = components?.map(c =>
+      `// --- ${c.name} v${c.version} ---\n${c.code}`
+    ).join('\n\n') ?? '';
+
     const wrappedSource = `
       return (function() {
+        ${componentCode}
         ${algorithm}
         return sketch;
       })();
@@ -274,6 +281,7 @@ export class ThreeRendererAdapter implements RendererAdapter {
     const state = ${stateJson};
     state.canvas = { width: ${width}, height: ${height}, pixelDensity: ${pixelDensity} };
 
+    ${extractComponentCode(sketch.components)}
     ${sketch.algorithm}
 
     sketch(THREE, state, document.getElementById('canvas-container'));

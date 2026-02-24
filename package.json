@@ -1,6 +1,6 @@
 {
   "name": "@genart-dev/core",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Renderer adapters, skill registry, and runtime interfaces for genart.dev",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -40,7 +40,8 @@
     "three",
     "glsl",
     "svg",
-    "canvas2d"
+    "canvas2d",
+    "components"
   ],
   "publishConfig": {
     "access": "public"
@@ -53,7 +54,8 @@
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
-    "@genart-dev/format": "^0.1.0"
+    "@genart-dev/components": "^0.1.0",
+    "@genart-dev/format": "^0.2.0"
   },
   "devDependencies": {
     "tsup": "^8.3.6",

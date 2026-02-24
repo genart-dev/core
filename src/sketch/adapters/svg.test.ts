@@ -94,6 +94,25 @@ describe("SVGRendererAdapter", () => {
       ).rejects.toThrow("SVG compilation failed");
     });
 
+    it("compiles with component code prepended", async () => {
+      const components = [
+        {
+          name: "prng",
+          version: "1.0.0",
+          code: "function mulberry32(a) { return function() { return 0.5; }; }",
+          exports: ["mulberry32"],
+        },
+      ];
+      const compiled = await adapter.compile(`
+        function sketch(state) {
+          const rng = mulberry32(42);
+          function generate() { return '<svg xmlns="http://www.w3.org/2000/svg"></svg>'; }
+          return { generate, initializeSystem: generate };
+        }
+      `, components);
+      expect(compiled).toBeDefined();
+    });
+
     it("compiled factory produces SVG output", async () => {
       const compiled = await adapter.compile(`
         function sketch(state) {

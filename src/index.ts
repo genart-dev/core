@@ -2,6 +2,16 @@
 // Consumers of @genart-dev/core get the full format API without a separate import
 export * from "@genart-dev/format";
 
+// Re-export component registry, resolver, and types
+export {
+  COMPONENT_REGISTRY,
+  resolveComponents,
+  type ComponentEntry,
+  type ComponentCategory,
+  type RendererTarget,
+  type ResolvedComponent,
+} from "@genart-dev/components";
+
 // Core types (runtime interfaces not in the format package)
 export type {
   SkillDefinition,

@@ -72,6 +72,25 @@ describe("Canvas2DRendererAdapter", () => {
         "Canvas 2D compilation failed",
       );
     });
+
+    it("compiles with component code prepended", async () => {
+      const components = [
+        {
+          name: "prng",
+          version: "1.0.0",
+          code: "function mulberry32(a) { return function() { return 0.5; }; }",
+          exports: ["mulberry32"],
+        },
+      ];
+      const compiled = await adapter.compile(`
+        function sketch(ctx, state) {
+          const rng = mulberry32(state.seed);
+          function initializeSystem() { ctx.clearRect(0, 0, 100, 100); }
+          return { initializeSystem };
+        }
+      `, components);
+      expect(compiled).toBeDefined();
+    });
   });
 
   describe("getAlgorithmTemplate", () => {

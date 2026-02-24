@@ -96,6 +96,37 @@ describe("P5RendererAdapter", () => {
         `),
       ).rejects.toThrow("p5 compilation failed");
     });
+
+    it("compiles with component code prepended", async () => {
+      const components = [
+        {
+          name: "prng",
+          version: "1.0.0",
+          code: "function mulberry32(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }",
+          exports: ["mulberry32"],
+        },
+      ];
+      const compiled = await adapter.compile(`
+        function sketch(p, state) {
+          const rng = mulberry32(state.seed);
+          p.setup = () => { p.createCanvas(100, 100); };
+          p.draw = () => { p.background(rng() * 255); };
+          return { initializeSystem() {} };
+        }
+      `, components);
+      expect(compiled).toBeDefined();
+    });
+
+    it("compile still works without components (backward compat)", async () => {
+      const compiled = await adapter.compile(`
+        function sketch(p, state) {
+          p.setup = () => { p.createCanvas(100, 100); };
+          p.draw = () => {};
+          return { initializeSystem() {} };
+        }
+      `);
+      expect(compiled).toBeDefined();
+    });
   });
 
   describe("getAlgorithmTemplate", () => {
@@ -150,6 +181,34 @@ describe("P5RendererAdapter", () => {
       expect(html).toContain("Test Sketch");
       expect(html).toContain("function sketch(p, state)");
       expect(html).toContain('"seed": 42');
+    });
+
+    it("includes component code in standalone HTML", () => {
+      const sketch = {
+        genart: "1.2",
+        id: "test",
+        title: "Test Sketch",
+        created: "2025-01-01T00:00:00Z",
+        modified: "2025-01-01T00:00:00Z",
+        renderer: { type: "p5" as const },
+        canvas: { width: 800, height: 600 },
+        parameters: [],
+        colors: [],
+        components: {
+          prng: { version: "1.0.0", code: "function mulberry32(a) { return a; }", exports: ["mulberry32"] },
+        },
+        state: { seed: 42, params: {}, colorPalette: [] },
+        algorithm: `function sketch(p, state) {
+          p.setup = () => { p.createCanvas(800, 600); };
+          p.draw = () => { p.background(0); };
+          return { initializeSystem() {} };
+        }`,
+      };
+
+      const html = adapter.generateStandaloneHTML(sketch);
+      expect(html).toContain("function mulberry32(a)");
+      expect(html).toContain("prng v1.0.0");
+      expect(html).toContain("function sketch(p, state)");
     });
 
     it("escapes HTML in title", () => {

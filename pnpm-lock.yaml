@@ -8,9 +8,12 @@ importers:
 
   .:
     dependencies:
-      '@genart-dev/format':
+      '@genart-dev/components':
         specifier: ^0.1.0
         version: 0.1.0
+      '@genart-dev/format':
+        specifier: ^0.2.0
+        version: 0.2.0
     devDependencies:
       tsup:
         specifier: ^8.3.6
@@ -180,8 +183,11 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@genart-dev/format@0.1.0':
-    resolution: {integrity: sha512-/t8j228VwX9tmRBBfAANSRp89GZ/UkICkS4jmXnK92TJXy1k3e8tewzqPt3ZRtO+p+qFKLG+NOzkfB74VRPg+g==}
+  '@genart-dev/components@0.1.0':
+    resolution: {integrity: sha512-UQARaUB/1v4CeYwqS/EGoxZ2adpbZ5QX6u+v3gxWbSEMbGT4nulChAp8kEJMAmUuXpLUL6amQnaYj9nE6RNxrg==}
+
+  '@genart-dev/format@0.2.0':
+    resolution: {integrity: sha512-zSeFfrJ9t8nZ/093b+0XLb8VElSSW3tx1hQZJSRsRlkupxByCbERde6kMvxH6USBuZ3truEanIIOrWDXB+PnRQ==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -793,7 +799,11 @@ snapshots:
   '@esbuild/win32-x64@0.27.3':
     optional: true
 
-  '@genart-dev/format@0.1.0': {}
+  '@genart-dev/components@0.1.0':
+    dependencies:
+      '@genart-dev/format': 0.2.0
+
+  '@genart-dev/format@0.2.0': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
