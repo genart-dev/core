@@ -1,0 +1,12 @@
+{
+  "title": "With Components",
+  "renderer": { "type": "canvas2d" },
+  "canvas": { "width": 800, "height": 600 },
+  "parameters": [
+    { "key": "count", "label": "Count", "min": 10, "max": 1000, "step": 10, "default": 100 }
+  ],
+  "colors": [],
+  "components": {
+    "prng": "^1.0.0"
+  }
+}
