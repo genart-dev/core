@@ -95,3 +95,28 @@ export {
   createLayerStack,
   compositeDesignLayers,
 } from "./design/index.js";
+
+// Compile system (developer mode)
+export {
+  compileProject,
+  discoverProject,
+  ejectProject,
+  watchProject,
+  parseSketchMeta,
+  parseExportsComment,
+  CompileFailure,
+  SKETCH_EXTENSIONS,
+  SKETCH_FILE_NAMES,
+  META_FILE_NAME,
+  OUTPUT_FILE_NAME,
+  COMPONENTS_DIR_NAME,
+} from "./compile/index.js";
+export type {
+  DevProject,
+  CompileOptions,
+  CompileResult,
+  CompileError,
+  WatchOptions,
+  FileWatcher,
+  SketchMeta,
+} from "./compile/index.js";
