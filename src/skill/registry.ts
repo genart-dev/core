@@ -1,5 +1,5 @@
 import type { SkillDefinition } from "../types.js";
-import { COMPOSITION_SKILLS, COLOR_SKILLS } from "./skills.js";
+import { COMPOSITION_SKILLS, COLOR_SKILLS, PAINTING_SKILLS } from "./skills.js";
 
 /**
  * Registry for design knowledge skills.
@@ -56,7 +56,7 @@ export class SkillRegistry {
  */
 export function createDefaultSkillRegistry(): SkillRegistry {
   const registry = new SkillRegistry();
-  for (const skill of [...COMPOSITION_SKILLS, ...COLOR_SKILLS]) {
+  for (const skill of [...COMPOSITION_SKILLS, ...COLOR_SKILLS, ...PAINTING_SKILLS]) {
     registry.register(skill);
   }
   return registry;

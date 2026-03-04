@@ -419,3 +419,161 @@ The advantage of working in OKLCH over HSL is that equal mathematical steps prod
     ],
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Painting & Illustration Skills
+// ---------------------------------------------------------------------------
+
+export const PAINTING_SKILLS: readonly SkillDefinition[] = [
+  {
+    id: "painting-foundations",
+    name: "Painting Foundations",
+    category: "painting",
+    complexity: "intermediate",
+    description:
+      "Core traditional art knowledge for illustration agents: value structure, color temperature, composition, medium choice, and layer sequencing.",
+    theory: `Every convincing painted illustration rests on a few timeless structural principles that apply regardless of medium or tool.
+
+**Value structure**: Before color, think in lights, shadows, and midtones. Simplify to 3–4 value groups — the viewer reads those groups first. Edge quality (hard, soft, lost, found) controls where the eye moves: hard edges attract, lost edges let the eye glide past.
+
+**Color temperature**: Warm lights / cool shadows is the dominant rule (sunlit scenes). The reverse (cool lights / warm shadows) occurs in overcast light or artificial sources. Atmospheric perspective cools and desaturates distant planes. Keeping temperature consistent within a light family makes the painting read as a unified light source.
+
+**Composition**: Identify a single focal point and build the value/color hierarchy around it. Use eye flow — leading lines, value contrast — to pull the viewer toward the focal area. Group values: a painting with 20 separate value steps reads as chaos; the same painting simplified to 3 groups reads immediately.
+
+**Medium choice**: Watercolor for luminous transparency (works light-to-dark, can't recover whites); oil for rich blendable paint (reworkable, impasto texture); ink for precision and graphic weight; pastel for chalky textured softness; charcoal for gestural atmospheric work.
+
+**Layer sequencing**: Texture layer first (paper, canvas), then large background washes (light-to-dark for watercolor), then midground value masses, then darks and accents last. This mirrors how traditional media behave — thin over thick in oil, light wash before dark in watercolor.`,
+    principles: [
+      "Establish value structure before committing to color — squint at your composition and check the 3-value read",
+      "Warm lights / cool shadows (or reverse) — never neutralize both; temperature contrast creates luminosity",
+      "Group values: reduce to 3–4 groups maximum for readable silhouette",
+      "Hard edges attract attention; soft and lost edges recede — use edge quality to control eye movement",
+      "Layer sequencing mirrors traditional media: texture → large washes → midground → darks/accents",
+      "Reserve whites in watercolor by not painting them; in oil, use opaque lights at the end",
+      "Atmospheric perspective: desaturate, cool, and lighten distant planes relative to foreground",
+    ],
+    references: [
+      { title: "Color and Light", author: "James Gurney", year: 2010 },
+      { title: "The Natural Way to Draw", author: "Kimon Nicolaïdes", year: 1941 },
+    ],
+  },
+  {
+    id: "watercolor-techniques",
+    name: "Watercolor Techniques",
+    category: "painting",
+    complexity: "intermediate",
+    description:
+      "Wet-on-wet, wet-on-dry, glazing, granulation, and tool sequencing for transparent watercolor illustration.",
+    theory: `Watercolor is a subtractive, transparent medium — you build darkness by layering washes, not by adding opaque paint. Every decision flows from this: reserve whites from the start, work light to dark, and use the paper color as your lightest value.
+
+**Wet-on-wet**: Paint applied to a wet surface blooms and diffuses. In plugin-painting terms: high bloom radius, diffuse/lost edgeStyle, high divergence in the field. Use for soft skies, misty backgrounds, atmospheric passages. Works when the underlying layer is conceptually "still wet."
+
+**Wet-on-dry**: Paint applied to dry paper produces crisper edges. In plugin-painting: lower bloom, soft/sharp edgeStyle. Use for controlled washes, defined shapes, architectural subjects.
+
+**Glazing**: Stacking thin multiply washes builds luminous depth. Each glaze tints the layers below — the paper white still glows through. Use low dilution, many layers, low opacity per pass. Equivalent to multiply blend mode stacked repeatedly.
+
+**Working light to dark**: Start with the lightest washes; add progressively darker glazes. Never paint over an area you want to keep light — that white is gone permanently.
+
+**Granulation**: Pigment settles into paper tooth in low-velocity zones (where the paint stops flowing). In plugin-painting: granulation parameter controls this; increase for rocks, foliage, rough textures; reduce for smooth skin, sky.
+
+**Tool sequence for a watercolor illustration**:
+1. \`add_paper_texture({ preset: "cold-press" })\` — foundational texture
+2. Large wet-on-wet washes for background (radial or noise field, high bloom, diffuse edges)
+3. Smaller wet-on-dry washes for midground forms (noise field, soft edges, more granulation)
+4. Dark accent glazes (small areas, multiply, low dilution)
+5. Ink line accents last (multiply, thin weight, fluid style)`,
+    principles: [
+      "Work light to dark — reserve whites by not painting them; you cannot recover them",
+      "Wet-on-wet: increase bloom radius (divergence) and use diffuse/lost edgeStyle for soft passages",
+      "Wet-on-dry: reduce bloom, use soft or sharp edgeStyle for controlled form",
+      "Glazing = stacking thin multiply washes; each pass adds depth without muddying",
+      "Granulation adds life: increase for organic textures (rocks, foliage), decrease for smooth areas",
+      "Paper texture (cold-press) should always be the bottom layer at multiply blend",
+      "Atmospheric passages: high dilution, noise field, diffuse edges, low opacity",
+    ],
+    references: [
+      { title: "Watercolor Painting", author: "Charles Reid", year: 1969 },
+      { title: "Color and Light", author: "James Gurney", year: 2010 },
+    ],
+  },
+  {
+    id: "ink-illustration",
+    name: "Ink Illustration",
+    category: "illustration",
+    complexity: "intermediate",
+    description:
+      "Line weight hierarchy, hatching for value, brush vs nib ink marks, and ink+watercolor ordering.",
+    theory: `Ink is a decisive, irreversible medium — every mark reads as intentional. Its graphic weight and precision make it ideal for subjects where structure and line quality are primary.
+
+**Line weight hierarchy**: Heavier lines for foreground objects, shadow sides, and silhouette edges. Lighter, thinner lines for receding forms, highlight sides, and background detail. This single rule does more for spatial depth than almost anything else.
+
+**Hatching for value**: Parallel hatching creates smooth gradients (use linear field at consistent angle). Cross-hatching darkens further (layer two hatching directions). Contour hatching follows the form of the object — use the field direction to follow surface curvature. In plugin-painting, ink streamlines naturally follow the field, so the field direction IS the hatch direction.
+
+**Brush ink vs nib ink**: Brush marks taper naturally at start and end (use \`taper: "both"\` in plugin-painting ink). Nib marks are more uniform with controlled taper. Brush style produces loose, expressive marks; nib produces precise, architectural marks. \`style: "brush"\` adds width variation; \`style: "fluid"\` is cleaner.
+
+**Ink + watercolor order**:
+- **Ink first, watercolor over**: Clean outlines that get tinted by washes. Colors bleed right to the edge.
+- **Watercolor first, ink over**: Ink reinforces and refines after seeing the color. Most professional approach — you can adjust the drawing after seeing the wash.
+- **Ink only**: Pure graphic illustration; value through hatching density alone.
+
+**Field choice for ink**: Linear fields produce parallel hatching (use for smooth gradients). Noise fields produce organic cross-hatching (use for foliage, rough surfaces). Radial fields produce radiating marks from a center (use for light sources, explosions). Low-magnitude zones in the field = brush lift = empty paper.`,
+    principles: [
+      "Heavier line weight for foreground, shadow side, and silhouette; lighter for receding forms",
+      "Field direction = hatch direction — use linear field for parallel hatching, noise for organic cross-hatch",
+      "Low-magnitude field zones = brush lift = white paper preserved",
+      "taper: 'both' mimics brush marks; taper: 'none' mimics nib/technical pen",
+      "Watercolor first, ink second: lay washes, then reinforce with ink line",
+      "Vary line weight within a single stroke using the taper property",
+      "style: 'fluid' for clean controlled marks; style: 'brush' for expressive variable-width marks",
+    ],
+    references: [
+      { title: "The Graphic Work of M.C. Escher", author: "M.C. Escher", year: 1967 },
+      { title: "Drawing on the Right Side of the Brain", author: "Betty Edwards", year: 1979 },
+    ],
+  },
+  {
+    id: "mixed-media-workflow",
+    name: "Mixed Media Workflow",
+    category: "illustration",
+    complexity: "advanced",
+    description:
+      "Recommended layer stack for finished illustrations combining texture, watercolor, oil/gouache, ink, and charcoal/pastel.",
+    theory: `A finished illustration typically combines multiple media to achieve richness, depth, and textural variety. Each medium plays a specific role in the layer stack — the order matters because each layer modifies what's below it.
+
+**Canonical 7-layer stack**:
+\`\`\`
+[0] textures:paper or textures:canvas   — blend: multiply
+[1] painting:watercolor (large washes)  — blend: multiply, low opacity
+[2] painting:watercolor (value masses)  — blend: multiply
+[3] painting:oil or painting:gouache    — blend: normal (opaque form modeling)
+[4] painting:watercolor (detail glazes) — blend: multiply
+[5] painting:ink (outlines, hatching)   — blend: multiply
+[6] painting:pastel or charcoal         — blend: soft-light (atmospheric texture)
+\`\`\`
+
+**Why this order**: Paper texture interacts with everything above via multiply. Large watercolor washes establish atmosphere and value relationships. Oil or gouache layers build opaque form over the transparent washes. Final ink lines reinforce drawing over all the painted layers. Pastel/charcoal in soft-light at the end adds atmospheric haze without obscuring the layers below.
+
+**Agent decision guide**:
+- "Loose painterly" → watercolor (layers 1–2) + charcoal (layer 6), high bloom, diffuse edges
+- "Graphic illustration" → gouache flat (layer 3) + ink heavy (layer 5), no bloom, sharp edges
+- "Old master" → oil multiple layers (layers 3–4), impasto highlights, multiply glazes
+- "Sketchy" → ink strokes (layer 5) + light charcoal (layer 6), minimal color layers
+- "Atmospheric landscape" → watercolor sky + ground (layers 1–2), ink horizon (layer 5), charcoal trees
+
+**Field relationships across layers**: The sky and ground watercolor layers should use different field types (radial for sky: outward from sun; noise for ground: organic terrain flow). The ink horizon uses a linear field at angle=0 (perfectly horizontal). Charcoal trees use a noise field with maskCenterY at the treeline.`,
+    principles: [
+      "Layer order: texture → large washes → opaque form → detail glazes → ink → atmospheric overlay",
+      "Paper texture is always the bottom layer at multiply blend",
+      "Watercolor washes establish overall value and color temperature before opaque media",
+      "Oil/gouache at normal blend creates opaque form over transparent washes",
+      "Ink always goes over paint layers (multiply blend), never under",
+      "Use maskCenterY + maskSpread to confine each painting layer to its zone at full canvas bounds",
+      "Pastel or charcoal in soft-light blend creates atmospheric haze without covering detail",
+      "Match field types to subject: radial for sky/sun, noise for organic terrain, linear for horizon",
+    ],
+    references: [
+      { title: "Color and Light", author: "James Gurney", year: 2010 },
+      { title: "Alla Prima", author: "Richard Schmid", year: 1998 },
+    ],
+  },
+];
