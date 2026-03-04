@@ -1,4 +1,4 @@
-import type { SketchComponentValue } from "@genart-dev/format";
+import type { SketchComponentValue, SketchSymbolValue } from "@genart-dev/format";
 
 /**
  * Extract component source code from a SketchDefinition.components record.
@@ -19,4 +19,26 @@ export function extractComponentCode(
     }
   }
   return blocks.join('\n\n');
+}
+
+/**
+ * Extract resolved symbol data from a SketchDefinition.symbols record.
+ * Returns a `const __symbols__ = { ... };` declaration for injection into
+ * algorithm scope, or an empty string if there are no resolved symbols.
+ * Only SketchSymbolDef (object) values are included; string refs are skipped.
+ */
+export function extractSymbolData(
+  symbols?: Readonly<Record<string, SketchSymbolValue>>,
+): string {
+  if (!symbols) return '';
+
+  const resolved: Record<string, SketchSymbolValue> = {};
+  for (const [id, value] of Object.entries(symbols)) {
+    if (typeof value !== 'string') {
+      resolved[id] = value;
+    }
+  }
+
+  if (Object.keys(resolved).length === 0) return '';
+  return `const __symbols__ = ${JSON.stringify(resolved)};`;
 }

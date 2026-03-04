@@ -13,7 +13,7 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
-import { extractComponentCode } from "./component-utils.js";
+import { extractComponentCode, extractSymbolData } from "./component-utils.js";
 import { generateCompositorScript } from "../../design/iframe-compositor.js";
 
 const P5_CDN_VERSION = "1.11.3";
@@ -298,6 +298,7 @@ export class P5RendererAdapter implements RendererAdapter {
     state.COLORS = ${colorsJson};
 
     ${extractComponentCode(sketch.components)}
+    ${extractSymbolData(sketch.symbols)}
     ${sketch.algorithm}
 
     new p5(function(p) {

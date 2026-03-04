@@ -13,7 +13,7 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
-import { extractComponentCode } from "./component-utils.js";
+import { extractComponentCode, extractSymbolData } from "./component-utils.js";
 import { generateCompositorScript, generateCompositorCall } from "../../design/iframe-compositor.js";
 
 /**
@@ -278,6 +278,7 @@ export class Canvas2DRendererAdapter implements RendererAdapter {
       state.canvas = { width: ${width}, height: ${height}, pixelDensity: ${pixelDensity} };
 
       ${extractComponentCode(sketch.components)}
+      ${extractSymbolData(sketch.symbols)}
       ${sketch.algorithm}
 
       const canvas = document.getElementById('canvas');

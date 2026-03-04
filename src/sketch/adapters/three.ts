@@ -13,7 +13,7 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
-import { extractComponentCode } from "./component-utils.js";
+import { extractComponentCode, extractSymbolData } from "./component-utils.js";
 import { generateCompositorScript, generateWebGLCompositorCode } from "../../design/iframe-compositor.js";
 
 const THREE_CDN_VERSION = "0.172.0";
@@ -283,6 +283,7 @@ export class ThreeRendererAdapter implements RendererAdapter {
     state.canvas = { width: ${width}, height: ${height}, pixelDensity: ${pixelDensity} };
 
     ${extractComponentCode(sketch.components)}
+    ${extractSymbolData(sketch.symbols)}
     ${sketch.algorithm}
 
     const __container = document.getElementById('canvas-container');

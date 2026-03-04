@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { SkillRegistry, createDefaultSkillRegistry } from "./registry.js";
-import { COMPOSITION_SKILLS, COLOR_SKILLS } from "./skills.js";
+import { COMPOSITION_SKILLS, COLOR_SKILLS, PAINTING_SKILLS } from "./skills.js";
 import type { SkillDefinition } from "../types.js";
 
 describe("SkillRegistry", () => {
@@ -127,13 +127,16 @@ describe("createDefaultSkillRegistry", () => {
   });
 
   it("has expected total skill count", () => {
-    const total = COMPOSITION_SKILLS.length + COLOR_SKILLS.length;
+    const total = COMPOSITION_SKILLS.length + COLOR_SKILLS.length + PAINTING_SKILLS.length;
     expect(registry.list()).toHaveLength(total);
-    expect(total).toBe(12);
   });
 
-  it("has both categories", () => {
-    expect(registry.categories()).toEqual(["color", "composition"]);
+  it("has all categories", () => {
+    const cats = registry.categories();
+    expect(cats).toContain("color");
+    expect(cats).toContain("composition");
+    expect(cats).toContain("painting");
+    expect(cats).toContain("illustration");
   });
 
   it("lists composition skills correctly", () => {
@@ -155,7 +158,7 @@ describe("createDefaultSkillRegistry", () => {
         const s = skill as SkillDefinition;
         expect(s.id).toBeTruthy();
         expect(s.name).toBeTruthy();
-        expect(["composition", "color"]).toContain(s.category);
+        expect(["composition", "color", "painting", "illustration"]).toContain(s.category);
         expect(["beginner", "intermediate", "advanced"]).toContain(s.complexity);
         expect(s.description.length).toBeGreaterThan(10);
         expect(s.theory.length).toBeGreaterThan(100);
