@@ -56,6 +56,7 @@ export type {
   MutableDesignLayer,
   LayerStackAccessor,
   SketchStateAccessor,
+  SketchMutator,
   PluginContext,
   PluginLogger,
   PluginHostInfo,

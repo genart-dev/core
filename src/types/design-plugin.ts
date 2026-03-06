@@ -252,11 +252,24 @@ export interface McpToolDefinition {
 export interface McpToolContext {
   readonly layers: LayerStackAccessor;
   readonly sketchState: SketchStateAccessor;
+  readonly sketch: SketchMutator;
   readonly canvasWidth: number;
   readonly canvasHeight: number;
   resolveAsset(assetId: string): Promise<Buffer | null>;
   captureComposite(format?: "png" | "jpeg"): Promise<Buffer>;
   emitChange(changeType: DesignChangeType): void;
+}
+
+export interface SketchMutator {
+  getSymbols(): Readonly<Record<string, unknown>>;
+  setSymbols(symbols: Record<string, unknown> | undefined): void;
+  getComponents(): Readonly<Record<string, unknown>>;
+  setComponents(components: Record<string, unknown>): void;
+  getThirdParty(): readonly Record<string, unknown>[];
+  setThirdParty(notices: Record<string, unknown>[] | undefined): void;
+  getRenderer(): string;
+  getGenartVersion(): string;
+  setGenartVersion(version: string): void;
 }
 
 export type DesignChangeType =
@@ -265,7 +278,8 @@ export type DesignChangeType =
   | "layer-updated"
   | "layer-reordered"
   | "selection-changed"
-  | "composite-changed";
+  | "composite-changed"
+  | "sketch-updated";
 
 export interface McpToolResult {
   readonly content: McpToolContent[];
