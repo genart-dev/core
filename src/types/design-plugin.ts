@@ -333,6 +333,11 @@ export interface LayerStackAccessor {
     blendMode?: BlendMode,
     opacity?: number,
   ): void;
+  /** Update top-level layer fields (visible, locked, name). */
+  updateMeta(
+    layerId: string,
+    fields: { visible?: boolean; locked?: boolean; name?: string },
+  ): void;
   reorder(layerId: string, newIndex: number): void;
   duplicate(layerId: string): string;
   readonly count: number;

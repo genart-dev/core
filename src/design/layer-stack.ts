@@ -137,6 +137,18 @@ export function createLayerStack(
       onChange("layer-updated");
     },
 
+    updateMeta(
+      layerId: string,
+      fields: { visible?: boolean; locked?: boolean; name?: string },
+    ): void {
+      const idx = findIndex(layerId);
+      const layer = layers[idx]!;
+      if (fields.visible !== undefined) layer.visible = fields.visible;
+      if (fields.locked !== undefined) layer.locked = fields.locked;
+      if (fields.name !== undefined) layer.name = fields.name;
+      onChange("layer-updated");
+    },
+
     reorder(layerId: string, newIndex: number): void {
       const oldIndex = findIndex(layerId);
       const clamped = Math.max(0, Math.min(newIndex, layers.length - 1));
