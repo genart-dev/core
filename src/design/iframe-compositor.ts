@@ -31,6 +31,17 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
 
   var __genart_layers = ${layersJson};
 
+  // --- Expose __genart_design API for algorithm access ---
+  window.__genart_design = {
+    layers: __genart_layers,
+    getLayer: function(name) {
+      return __genart_layers.find(function(l) { return l.name === name; });
+    },
+    getLayersByType: function(type) {
+      return __genart_layers.filter(function(l) { return l.type === type; });
+    }
+  };
+
   // --- Blend mode mapping ---
   function toCompositeOp(mode) {
     return mode === "normal" ? "source-over" : mode;
@@ -555,6 +566,7 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
   window.addEventListener("message", function(e) {
     if (e.data && e.data.type === "design:updateLayers") {
       __genart_layers = e.data.layers;
+      if (window.__genart_design) window.__genart_design.layers = __genart_layers;
       var canvas = document.getElementById("canvas") || document.querySelector("canvas");
       if (!canvas) return;
       var ctx = canvas.getContext("2d");
