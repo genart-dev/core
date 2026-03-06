@@ -19,7 +19,7 @@ export interface SkillDefinition {
   /** Human-readable skill name. */
   readonly name: string;
   /** Skill category. */
-  readonly category: "composition" | "color" | "painting" | "illustration";
+  readonly category: "composition" | "color" | "painting" | "illustration" | "process";
   /** Complexity level. */
   readonly complexity: "beginner" | "intermediate" | "advanced";
   /** Brief description. */

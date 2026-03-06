@@ -88,6 +88,7 @@ export {
   createDefaultSkillRegistry,
   COMPOSITION_SKILLS,
   COLOR_SKILLS,
+  PROCESS_SKILLS,
 } from "./skill/index.js";
 
 // Design plugin system
