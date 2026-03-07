@@ -518,6 +518,11 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
     }
 
     var render = RENDERERS[layer.type];
+    if (!render && layer.type.indexOf(":") > 0) {
+      var parts = layer.type.split(":");
+      var alt = parts[0].replace(/s$/, "") + ":" + parts.slice(1).join(":");
+      render = RENDERERS[alt];
+    }
     if (!render) return;
 
     ctx.save();
