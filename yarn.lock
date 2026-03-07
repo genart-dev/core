@@ -14,14 +14,6 @@
   dependencies:
     "@genart-dev/format" "^0.2.0"
 
-"@genart-dev/core@file:":
-  version "0.6.0"
-  resolved "file:"
-  dependencies:
-    "@genart-dev/components" "^0.1.0"
-    "@genart-dev/core" "file:"
-    "@genart-dev/format" "^0.5.0"
-
 "@genart-dev/format@^0.2.0":
   version "0.2.0"
   resolved "https://registry.npmjs.org/@genart-dev/format/-/format-0.2.0.tgz"

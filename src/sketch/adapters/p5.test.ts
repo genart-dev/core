@@ -235,4 +235,36 @@ describe("P5RendererAdapter", () => {
       expect(html).toContain("&lt;script&gt;");
     });
   });
+
+  describe("generateInteractiveHTML", () => {
+    it("generates HTML with interactive panel controls", () => {
+      const sketch = {
+        genart: "1.1",
+        id: "test-p5",
+        title: "P5 Interactive",
+        created: "2025-01-01T00:00:00Z",
+        modified: "2025-01-01T00:00:00Z",
+        renderer: { type: "p5" as const },
+        canvas: { width: 800, height: 600 },
+        parameters: [
+          { key: "scale", label: "Scale", min: 0.1, max: 10, step: 0.1, default: 1 },
+        ],
+        colors: [
+          { key: "primary", label: "Primary", default: "#ff0000" },
+        ],
+        state: { seed: 42, params: { scale: 1 }, colorPalette: ["#ff0000"] },
+        algorithm: `function sketch(p, state) {
+          p.setup = () => { p.createCanvas(800, 600); };
+          return { initializeSystem() {} };
+        }`,
+      };
+
+      const html = adapter.generateInteractiveHTML(sketch);
+      expect(html).toContain("Preview");
+      expect(html).toContain('id="genart-panel"');
+      expect(html).toContain('id="gp-seed"');
+      expect(html).toContain("__gp_rerender");
+      expect(html).toContain("p5.min.js");
+    });
+  });
 });

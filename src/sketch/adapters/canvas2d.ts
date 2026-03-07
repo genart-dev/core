@@ -14,6 +14,7 @@ import type {
   RuntimeDependency,
 } from "../../types.js";
 import { extractComponentCode, extractSymbolData } from "./component-utils.js";
+import { generateInteractivePanel } from "../interactive-panel.js";
 import { generateCompositorScript, generateCompositorCall } from "../../design/iframe-compositor.js";
 
 /**
@@ -296,6 +297,75 @@ export class Canvas2DRendererAdapter implements RendererAdapter {
       document.body.style.padding = '16px';
       document.body.textContent = 'Sketch error: ' + e.message;
     }
+  </script>
+</body>
+</html>`;
+  }
+
+  generateInteractiveHTML(sketch: SketchDefinition): string {
+    const { width, height } = sketch.canvas;
+    const pixelDensity = sketch.canvas.pixelDensity ?? 1;
+    const stateJson = JSON.stringify(sketch.state, null, 2);
+    const panel = generateInteractivePanel(sketch);
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(sketch.title)} — Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #111; }
+    body { display: flex; justify-content: center; align-items: center; }
+    canvas { display: block; }
+    ${panel.css}
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="${width * pixelDensity}" height="${height * pixelDensity}" style="width:${width}px;height:${height}px;"></canvas>
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
+  ${panel.html}
+  <script>
+    var state = ${stateJson};
+    state.canvas = { width: ${width}, height: ${height}, pixelDensity: ${pixelDensity} };
+
+    ${extractComponentCode(sketch.components)}
+    ${extractSymbolData(sketch.symbols)}
+    ${sketch.algorithm}
+
+    ${panel.js}
+
+    function __gp_render() {
+      try {
+        // Sync state from panel
+        state.seed = __gp_state.seed;
+        state.params = Object.assign({}, __gp_state.params);
+        state.colorPalette = __gp_state.colorPalette.slice();
+        state.SEED = state.seed;
+        state.PARAMS = state.params;
+        // Rebuild COLORS map
+        var COLORS = {};
+        var colorDefs = __gp_colorDefs;
+        for (var i = 0; i < colorDefs.length; i++) {
+          COLORS[colorDefs[i].key] = state.colorPalette[i] || '#000000';
+        }
+        state.COLORS = COLORS;
+
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ${pixelDensity !== 1 ? `ctx.scale(${pixelDensity}, ${pixelDensity});` : ""}
+        var module = sketch(ctx, state);
+        if (module && module.initializeSystem) module.initializeSystem();
+        ${sketch.layers && sketch.layers.length > 0 ? generateCompositorCall() : ""}
+      } catch (e) {
+        console.error('Render error:', e);
+      }
+    }
+    __gp_rerender = __gp_render;
+    __gp_render();
   </script>
 </body>
 </html>`;

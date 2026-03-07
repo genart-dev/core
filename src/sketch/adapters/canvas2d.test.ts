@@ -147,4 +147,39 @@ describe("Canvas2DRendererAdapter", () => {
       expect(html).not.toContain("cdnjs");
     });
   });
+
+  describe("generateInteractiveHTML", () => {
+    it("generates HTML with interactive panel controls", () => {
+      const sketch = {
+        genart: "1.1",
+        id: "test-canvas2d",
+        title: "Canvas 2D Interactive",
+        created: "2025-01-01T00:00:00Z",
+        modified: "2025-01-01T00:00:00Z",
+        renderer: { type: "canvas2d" as const },
+        canvas: { width: 800, height: 600 },
+        parameters: [
+          { key: "density", label: "Density", min: 1, max: 100, step: 1, default: 50 },
+        ],
+        colors: [
+          { key: "bg", label: "Background", default: "#111111" },
+        ],
+        state: { seed: 42, params: { density: 50 }, colorPalette: ["#111111"] },
+        algorithm: `function sketch(ctx, state) {
+          function initializeSystem() { ctx.fillRect(0, 0, 800, 600); }
+          return { initializeSystem };
+        }`,
+      };
+
+      const html = adapter.generateInteractiveHTML(sketch);
+      expect(html).toContain("<!DOCTYPE html>");
+      expect(html).toContain("Preview");
+      expect(html).toContain('id="genart-panel"');
+      expect(html).toContain('id="gp-seed"');
+      expect(html).toContain('id="gp-param-density"');
+      expect(html).toContain('id="gp-color-0"');
+      expect(html).toContain("__gp_rerender");
+      expect(html).toContain("__gp_render");
+    });
+  });
 });

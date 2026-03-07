@@ -14,6 +14,7 @@ import type {
   RuntimeDependency,
 } from "../../types.js";
 import { extractComponentCode, extractSymbolData } from "./component-utils.js";
+import { generateInteractivePanel } from "../interactive-panel.js";
 import { generateCompositorScript } from "../../design/iframe-compositor.js";
 
 const P5_CDN_VERSION = "1.11.3";
@@ -342,6 +343,86 @@ export class P5RendererAdapter implements RendererAdapter {
         };
       }` : ""}
     }, document.getElementById('canvas-container'));
+  </script>
+</body>
+</html>`;
+  }
+
+  generateInteractiveHTML(sketch: SketchDefinition): string {
+    const { width, height } = sketch.canvas;
+    const pixelDensity = sketch.canvas.pixelDensity ?? 1;
+    const stateJson = JSON.stringify(sketch.state, null, 2);
+    const panel = generateInteractivePanel(sketch);
+
+    const colorsMap: Record<string, string> = {};
+    for (let i = 0; i < sketch.colors.length; i++) {
+      const colorDef = sketch.colors[i];
+      if (colorDef) {
+        colorsMap[colorDef.key] = sketch.state.colorPalette[i] ?? "#000000";
+      }
+    }
+    const colorsJson = JSON.stringify(colorsMap);
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(sketch.title)} — Preview</title>
+  <script src="${P5_CDN_URL}"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; }
+    #canvas-container canvas { display: block; max-width: 100vw; max-height: 100vh; }
+    ${panel.css}
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
+  ${panel.html}
+  <script>
+    var state = ${stateJson};
+    state.canvas = { width: ${width}, height: ${height}, pixelDensity: ${pixelDensity} };
+    state.WIDTH = ${width};
+    state.HEIGHT = ${height};
+    state.SEED = state.seed;
+    state.PARAMS = state.params;
+    state.COLORS = ${colorsJson};
+
+    ${extractComponentCode(sketch.components)}
+    ${extractSymbolData(sketch.symbols)}
+    ${sketch.algorithm}
+
+    ${panel.js}
+
+    var __p5Instance = null;
+    function __gp_render() {
+      // Sync state from panel
+      state.seed = __gp_state.seed;
+      state.params = Object.assign({}, __gp_state.params);
+      state.colorPalette = __gp_state.colorPalette.slice();
+      state.SEED = state.seed;
+      state.PARAMS = state.params;
+      var colorDefs = __gp_colorDefs;
+      for (var i = 0; i < colorDefs.length; i++) {
+        state.COLORS[colorDefs[i].key] = state.colorPalette[i] || '#000000';
+      }
+
+      // Tear down previous p5 instance
+      if (__p5Instance) {
+        __p5Instance.remove();
+        __p5Instance = null;
+      }
+      var container = document.getElementById('canvas-container');
+      container.innerHTML = '';
+
+      __p5Instance = new p5(function(p) {
+        sketch(p, state);
+      }, container);
+    }
+    __gp_rerender = __gp_render;
+    __gp_render();
   </script>
 </body>
 </html>`;

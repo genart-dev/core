@@ -14,6 +14,7 @@ import type {
   RuntimeDependency,
 } from "../../types.js";
 import { extractComponentCode, extractSymbolData } from "./component-utils.js";
+import { generateInteractivePanel } from "../interactive-panel.js";
 import { generateSVGLayerScript } from "../../design/iframe-compositor.js";
 
 /**
@@ -252,6 +253,55 @@ export class SVGRendererAdapter implements RendererAdapter {
     const module = sketch(state);
     const svgString = module.generate ? module.generate() : module.initializeSystem();
     document.getElementById('svg-container').innerHTML = svgString;
+  </script>
+  ${sketch.layers && sketch.layers.length > 0 ? generateSVGLayerScript(sketch.layers) : ""}
+</body>
+</html>`;
+  }
+
+  generateInteractiveHTML(sketch: SketchDefinition): string {
+    const { width, height } = sketch.canvas;
+    const stateJson = JSON.stringify(sketch.state, null, 2);
+    const panel = generateInteractivePanel(sketch);
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(sketch.title)} — Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; }
+    #svg-container svg { display: block; width: 100%; height: auto; max-width: 100vw; max-height: 100vh; }
+    ${panel.css}
+  </style>
+</head>
+<body>
+  <div id="svg-container"></div>
+  ${panel.html}
+  <script>
+    var state = ${stateJson};
+    state.canvas = { width: ${width}, height: ${height} };
+
+    ${extractComponentCode(sketch.components)}
+    ${extractSymbolData(sketch.symbols)}
+    ${sketch.algorithm}
+
+    ${panel.js}
+
+    function __gp_render() {
+      // Sync state from panel
+      state.seed = __gp_state.seed;
+      state.params = Object.assign({}, __gp_state.params);
+      state.colorPalette = __gp_state.colorPalette.slice();
+
+      var module = sketch(state);
+      var svgString = module.generate ? module.generate() : module.initializeSystem();
+      document.getElementById('svg-container').innerHTML = svgString;
+    }
+    __gp_rerender = __gp_render;
+    __gp_render();
   </script>
   ${sketch.layers && sketch.layers.length > 0 ? generateSVGLayerScript(sketch.layers) : ""}
 </body>

@@ -15,6 +15,7 @@ import type {
   RuntimeDependency,
 } from "../../types.js";
 import { generateCompositorScript, generateWebGLCompositorCode } from "../../design/iframe-compositor.js";
+import { generateInteractivePanel } from "../interactive-panel.js";
 
 /** Built-in uniforms that are not mapped from user parameters. */
 const BUILTIN_UNIFORMS = new Set([
@@ -610,6 +611,130 @@ ${colorBindings}
       ${sketch.layers && sketch.layers.length > 0 ? `__compositeLayersWebGL(gl, ${width}, ${height});` : ""}
       requestAnimationFrame(render);
     }
+    ${sketch.layers && sketch.layers.length > 0 ? generateWebGLCompositorCode() : ""}
+    render();
+  </script>
+</body>
+</html>`;
+  }
+
+  generateInteractiveHTML(sketch: SketchDefinition): string {
+    const { width, height } = sketch.canvas;
+    const pixelDensity = sketch.canvas.pixelDensity ?? 1;
+    const stateJson = JSON.stringify(sketch.state, null, 2);
+    const panel = generateInteractivePanel(sketch);
+
+    const glslComponentCode = extractGLSLComponentCode(sketch.components);
+    const fullAlgorithm = glslComponentCode
+      ? injectGLSLSource(sketch.algorithm, glslComponentCode)
+      : sketch.algorithm;
+
+    const uniforms = extractUniforms(fullAlgorithm);
+    // Generate dynamic param binding code that reads from state at render time
+    const paramBindingCode = uniforms.params
+      .map((u) => {
+        const key = u.substring(2);
+        return `      { var loc = gl.getUniformLocation(program, "${u}"); if (loc && state.params["${key}"] !== undefined) gl.uniform1f(loc, state.params["${key}"]); }`;
+      })
+      .join("\n");
+
+    const colorBindingCode = uniforms.colors
+      .map((u) => {
+        const idx = parseInt(u.replace("u_color", ""), 10) - 1;
+        return `      { var loc = gl.getUniformLocation(program, "${u}"); if (loc && state.colorPalette[${idx}]) { var c = state.colorPalette[${idx}].replace('#',''); gl.uniform3f(loc, parseInt(c.substring(0,2),16)/255, parseInt(c.substring(2,4),16)/255, parseInt(c.substring(4,6),16)/255); } }`;
+      })
+      .join("\n");
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(sketch.title)} — Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; }
+    canvas { display: block; max-width: 100vw; max-height: 100vh; }
+    ${panel.css}
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="${width * pixelDensity}" height="${height * pixelDensity}" style="width:${width}px;height:${height}px;"></canvas>
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
+  ${panel.html}
+  <script>
+    var state = ${stateJson};
+
+    ${panel.js}
+
+    var canvas = document.getElementById('canvas');
+    var gl = canvas.getContext('webgl2', { preserveDrawingBuffer: true });
+    if (!gl) { document.body.textContent = 'WebGL2 not supported'; throw new Error('No WebGL2'); }
+
+    var vertSrc = \`${FULLSCREEN_QUAD_VERTEX}\`;
+    var fragSrc = \`${fullAlgorithm.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$/g, "\\$")}\`;
+
+    function createShader(type, src) {
+      var s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+      return s;
+    }
+
+    var program = gl.createProgram();
+    gl.attachShader(program, createShader(gl.VERTEX_SHADER, vertSrc));
+    gl.attachShader(program, createShader(gl.FRAGMENT_SHADER, fragSrc));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
+
+    var positions = new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]);
+    var buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+    var vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    var aPos = gl.getAttribLocation(program, 'a_position');
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null);
+
+    var startTime = performance.now();
+    var __animId = null;
+
+    function render() {
+      // Sync state from panel
+      state.seed = __gp_state.seed;
+      state.params = Object.assign({}, __gp_state.params);
+      state.colorPalette = __gp_state.colorPalette.slice();
+
+      gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(program);
+
+      { var loc = gl.getUniformLocation(program, 'u_resolution'); if (loc) gl.uniform2f(loc, ${width}, ${height}); }
+      { var loc = gl.getUniformLocation(program, 'u_seed'); if (loc) gl.uniform1f(loc, state.seed); }
+      { var loc = gl.getUniformLocation(program, 'u_time'); if (loc) gl.uniform1f(loc, (performance.now() - startTime) / 1000); }
+
+${paramBindingCode}
+${colorBindingCode}
+
+      gl.bindVertexArray(vao);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      gl.bindVertexArray(null);
+      ${sketch.layers && sketch.layers.length > 0 ? `__compositeLayersWebGL(gl, ${width}, ${height});` : ""}
+      __animId = requestAnimationFrame(render);
+    }
+
+    __gp_rerender = function() {
+      startTime = performance.now();
+      // For GLSL, the render loop continuously reads from state, so just syncing is enough
+      state.seed = __gp_state.seed;
+      state.params = Object.assign({}, __gp_state.params);
+      state.colorPalette = __gp_state.colorPalette.slice();
+    };
+
     ${sketch.layers && sketch.layers.length > 0 ? generateWebGLCompositorCode() : ""}
     render();
   </script>

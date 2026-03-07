@@ -14,6 +14,7 @@ import type {
   RuntimeDependency,
 } from "../../types.js";
 import { extractComponentCode, extractSymbolData } from "./component-utils.js";
+import { generateInteractivePanel } from "../interactive-panel.js";
 import { generateCompositorScript, generateWebGLCompositorCode } from "../../design/iframe-compositor.js";
 
 const THREE_CDN_VERSION = "0.172.0";
@@ -303,6 +304,75 @@ export class ThreeRendererAdapter implements RendererAdapter {
     // Delay start to let Three.js initialize
     setTimeout(__threeCompositeLoop, 100);
     ` : ""}
+  </script>
+</body>
+</html>`;
+  }
+
+  generateInteractiveHTML(sketch: SketchDefinition): string {
+    const { width, height } = sketch.canvas;
+    const pixelDensity = sketch.canvas.pixelDensity ?? 1;
+    const stateJson = JSON.stringify(sketch.state, null, 2);
+    const panel = generateInteractivePanel(sketch);
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(sketch.title)} — Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; overflow: hidden; }
+    #canvas-container { width: ${width}px; height: ${height}px; }
+    #canvas-container canvas { display: block; max-width: 100vw; max-height: 100vh; }
+    ${panel.css}
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
+  ${panel.html}
+  <script type="module">
+    import * as THREE from '${THREE_CDN_URL}';
+
+    var state = ${stateJson};
+    state.canvas = { width: ${width}, height: ${height}, pixelDensity: ${pixelDensity} };
+
+    ${extractComponentCode(sketch.components)}
+    ${extractSymbolData(sketch.symbols)}
+    ${sketch.algorithm}
+
+    ${panel.js}
+
+    var __activeAnimId = null;
+    function __gp_render() {
+      // Sync state from panel
+      state.seed = __gp_state.seed;
+      state.params = Object.assign({}, __gp_state.params);
+      state.colorPalette = __gp_state.colorPalette.slice();
+
+      // Cancel any running animation loop
+      if (__activeAnimId) cancelAnimationFrame(__activeAnimId);
+
+      var container = document.getElementById('canvas-container');
+      container.innerHTML = '';
+
+      // Patch requestAnimationFrame to track the animation ID
+      var origRAF = window.requestAnimationFrame;
+      window.requestAnimationFrame = function(cb) {
+        __activeAnimId = origRAF.call(window, cb);
+        return __activeAnimId;
+      };
+
+      sketch(THREE, state, container);
+
+      // Restore original
+      window.requestAnimationFrame = origRAF;
+    }
+    window.__gp_rerender = __gp_render;
+    __gp_rerender = __gp_render;
+    __gp_render();
   </script>
 </body>
 </html>`;
