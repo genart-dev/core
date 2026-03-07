@@ -304,8 +304,9 @@ export class P5RendererAdapter implements RendererAdapter {
 
     new p5(function(p) {
       sketch(p, state);
-      ${sketch.layers && sketch.layers.length > 0 ? `// Composite design layers after initial p5 setup
+      ${sketch.layers && sketch.layers.length > 0 ? `// Composite design layers after initial p5 setup and each draw frame
       var __origSetup = p.setup;
+      var __preLayerSnapshot = null;
       if (__origSetup) {
         p.setup = function() {
           __origSetup.call(p);
@@ -313,6 +314,31 @@ export class P5RendererAdapter implements RendererAdapter {
             var c = document.querySelector('#canvas-container canvas');
             if (c && window.__genart_compositeLayers) window.__genart_compositeLayers(c);
           }, 0);
+        };
+      }
+      // For accumulative sketches: composite layers after each draw frame,
+      // then restore the pre-layer state before the next frame so particles
+      // accumulate on the clean canvas without compounding layer effects.
+      var __origDraw = p.draw;
+      if (__origDraw) {
+        p.draw = function() {
+          var c = document.querySelector('#canvas-container canvas');
+          if (c && __preLayerSnapshot) {
+            var rCtx = c.getContext('2d');
+            var st = rCtx.getTransform();
+            rCtx.setTransform(1,0,0,1,0,0);
+            rCtx.putImageData(__preLayerSnapshot, 0, 0);
+            rCtx.setTransform(st);
+          }
+          __origDraw.call(p);
+          if (c && window.__genart_compositeLayersFrame) {
+            var ctx2 = c.getContext('2d');
+            var st2 = ctx2.getTransform();
+            ctx2.setTransform(1,0,0,1,0,0);
+            try { __preLayerSnapshot = ctx2.getImageData(0, 0, c.width, c.height); } catch(e) {}
+            ctx2.setTransform(st2);
+            window.__genart_compositeLayersFrame(c);
+          }
         };
       }` : ""}
     }, document.getElementById('canvas-container'));

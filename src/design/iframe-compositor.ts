@@ -43,6 +43,9 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
     }
   };
 
+  // --- Algorithm-to-layer data bridge (ADR 062) ---
+  window.__genart_data = {};
+
   // --- Blend mode mapping ---
   function toCompositeOp(mode) {
     return mode === "normal" ? "source-over" : mode;
@@ -502,6 +505,33 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
   // Compositing entry point
   // =================================================================
 
+  // Modifier layers read existing pixels (getImageData), modify, and write
+  // back (putImageData). They must NOT be composited via offscreen+drawImage
+  // because that doubles the original content (once on canvas, once in the
+  // offscreen copy). Instead they render directly and opacity is applied via
+  // pixel-level lerp between original and modified.
+  var MODIFIER_TYPES = {
+    "painting:watercolor": 1, "painting:charcoal": 1, "painting:ink": 1,
+    "painting:fill": 1, "painting:stroke": 1,
+    "adjust:hsl": 1, "adjust:levels": 1, "adjust:curves": 1,
+    "filter:grain": 1, "filter:chromatic-aberration": 1,
+    "filter:duotone": 1, "filter:blur": 1
+  };
+
+  // OffscreenCanvas cache — avoids per-frame allocation for additive layers.
+  // Keyed by "layerId:WxH" so each layer reuses its own canvas.
+  var __offscreenCache = {};
+  function getCachedOffscreen(key, w, h) {
+    var oc = __offscreenCache[key];
+    if (!oc || oc.width !== w || oc.height !== h) {
+      oc = new OffscreenCanvas(w, h);
+      __offscreenCache[key] = oc;
+    } else {
+      oc.getContext("2d").clearRect(0, 0, w, h);
+    }
+    return oc;
+  }
+
   function compositeLayer(layer, ctx) {
     if (!layer.visible) return;
 
@@ -525,38 +555,130 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
     }
     if (!render) return;
 
-    ctx.save();
-    ctx.globalAlpha = layer.opacity;
-    ctx.globalCompositeOperation = toCompositeOp(layer.blendMode);
-
-    // Transform: translate → rotate → scale around anchor
     var t = layer.transform;
-    var ax = t.x + t.width * t.anchorX;
-    var ay = t.y + t.height * t.anchorY;
-    ctx.translate(ax, ay);
-    if (t.rotation !== 0) ctx.rotate((t.rotation * Math.PI) / 180);
-    if (t.scaleX !== 1 || t.scaleY !== 1) ctx.scale(t.scaleX, t.scaleY);
-    ctx.translate(-ax, -ay);
+    var w = Math.ceil(t.width);
+    var h = Math.ceil(t.height);
+    if (w <= 0 || h <= 0) return;
 
-    var bounds = { x: t.x, y: t.y, width: t.width, height: t.height };
-    render(ctx, layer.properties, bounds);
+    if (MODIFIER_TYPES[layer.type]) {
+      // --- Modifier path ---
+      // Render directly on canvas (renderer needs existing pixels).
+      // Then apply opacity as a pixel-level lerp between original and modified.
+      var bounds = { x: t.x, y: t.y, width: w, height: h };
+      var origData = null;
+      if (layer.opacity < 1) {
+        origData = ctx.getImageData(t.x, t.y, w, h);
+      }
 
-    ctx.restore();
+      render(ctx, layer.properties, bounds);
+
+      if (origData && layer.opacity < 1) {
+        var modData = ctx.getImageData(t.x, t.y, w, h);
+        var orig = origData.data;
+        var mod = modData.data;
+        var a = layer.opacity;
+        var invA = 1 - a;
+        for (var pi = 0; pi < orig.length; pi += 4) {
+          mod[pi]     = orig[pi]     * invA + mod[pi]     * a + 0.5 | 0;
+          mod[pi + 1] = orig[pi + 1] * invA + mod[pi + 1] * a + 0.5 | 0;
+          mod[pi + 2] = orig[pi + 2] * invA + mod[pi + 2] * a + 0.5 | 0;
+          mod[pi + 3] = orig[pi + 3] * invA + mod[pi + 3] * a + 0.5 | 0;
+        }
+        ctx.putImageData(modData, t.x, t.y);
+      }
+    } else {
+      // --- Additive path ---
+      // Render to a clean offscreen canvas (no pre-copy of existing content).
+      // Renderers that use putImageData (e.g. textures:paper) create their own
+      // ImageData, so the offscreen starts blank. drawImage then composites the
+      // result with proper blend mode, opacity, and transforms.
+      var cacheKey = (layer.id || layer.type) + ":" + w + "x" + h;
+      var layerOff = getCachedOffscreen(cacheKey, w, h);
+      var layerCtx = layerOff.getContext("2d");
+
+      var localBounds = { x: 0, y: 0, width: w, height: h };
+      render(layerCtx, layer.properties, localBounds);
+
+      ctx.save();
+      ctx.globalAlpha = layer.opacity;
+      ctx.globalCompositeOperation = toCompositeOp(layer.blendMode);
+
+      // Transform: translate → rotate → scale around anchor
+      var ax = t.x + w * t.anchorX;
+      var ay = t.y + h * t.anchorY;
+      ctx.translate(ax, ay);
+      if (t.rotation !== 0) ctx.rotate((t.rotation * Math.PI) / 180);
+      if (t.scaleX !== 1 || t.scaleY !== 1) ctx.scale(t.scaleX, t.scaleY);
+      ctx.translate(-ax, -ay);
+
+      ctx.drawImage(layerOff, t.x, t.y);
+      ctx.restore();
+    }
   }
 
   // Stores a snapshot of the canvas before layers are composited so live
   // layer updates can restore the clean sketch output before re-compositing.
   var __cleanSnapshot = null;
 
+  // Cached DPR offscreen to avoid allocation per frame
+  var __dprOffscreen = null;
+
+  // Composite layers, handling DPR mismatch between physical canvas size
+  // and logical layer dimensions. Pixel-manipulation renderers (getImageData/
+  // putImageData) bypass canvas transforms, so when canvas.width > logical
+  // width (e.g. retina 2x), we composite via an offscreen canvas at logical
+  // resolution and then draw the result back scaled to physical size.
+  function __renderLayers(canvas, ctx) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    var logW = canvas.width, logH = canvas.height;
+    for (var i = 0; i < __genart_layers.length; i++) {
+      var lt = __genart_layers[i].transform;
+      if (lt.width > 0 && lt.height > 0) { logW = lt.width; logH = lt.height; break; }
+    }
+    if (canvas.width !== logW || canvas.height !== logH) {
+      if (!__dprOffscreen || __dprOffscreen.width !== logW || __dprOffscreen.height !== logH) {
+        __dprOffscreen = new OffscreenCanvas(logW, logH);
+      }
+      var offCtx = __dprOffscreen.getContext("2d");
+      offCtx.clearRect(0, 0, logW, logH);
+      offCtx.drawImage(canvas, 0, 0, logW, logH);
+      for (var j = 0; j < __genart_layers.length; j++) {
+        compositeLayer(__genart_layers[j], offCtx);
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(__dprOffscreen, 0, 0, canvas.width, canvas.height);
+    } else {
+      for (var j = 0; j < __genart_layers.length; j++) {
+        compositeLayer(__genart_layers[j], ctx);
+      }
+    }
+  }
+
   window.__genart_compositeLayers = function(canvas) {
     if (!canvas || !__genart_layers || __genart_layers.length === 0) return;
     var ctx = canvas.getContext("2d");
     if (!ctx) return;
+    // Save the current transform (e.g. p5 pixelDensity scale) so we can restore it
+    var savedTransform = ctx.getTransform();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     // Save a clean copy of the sketch output (before any layers)
     try { __cleanSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height); } catch(e) {}
-    for (var i = 0; i < __genart_layers.length; i++) {
-      compositeLayer(__genart_layers[i], ctx);
-    }
+    __renderLayers(canvas, ctx);
+    // Restore the original transform so subsequent drawing (e.g. p5 draw loop) works correctly
+    ctx.setTransform(savedTransform);
+  };
+
+  // --- Per-frame compositing for accumulative sketches ---
+  // Composites layers on top of the current canvas without saving a snapshot.
+  // Used by draw()-loop sketches to apply design layers each frame.
+  // The caller is responsible for saving/restoring the pre-layer state between frames.
+  window.__genart_compositeLayersFrame = function(canvas) {
+    if (!canvas || !__genart_layers || __genart_layers.length === 0) return;
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    var savedTransform = ctx.getTransform();
+    __renderLayers(canvas, ctx);
+    ctx.setTransform(savedTransform);
   };
 
   // --- WebGL compositing helper ---
@@ -580,15 +702,17 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
       var canvas = document.getElementById("canvas") || document.querySelector("canvas");
       if (!canvas) return;
       var ctx = canvas.getContext("2d");
-      // Restore the clean sketch output before re-compositing layers
-      if (ctx && __cleanSnapshot) {
+      if (!ctx) return;
+      // Save and restore the current transform (e.g. p5 pixelDensity scale)
+      var savedTransform = ctx.getTransform();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      if (__cleanSnapshot) {
         ctx.putImageData(__cleanSnapshot, 0, 0);
       }
       if (__genart_layers && __genart_layers.length > 0) {
-        for (var i = 0; i < __genart_layers.length; i++) {
-          compositeLayer(__genart_layers[i], ctx);
-        }
+        __renderLayers(canvas, ctx);
       }
+      ctx.setTransform(savedTransform);
     }
   });
 })();
