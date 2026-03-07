@@ -276,6 +276,7 @@ export class ThreeRendererAdapter implements RendererAdapter {
 </head>
 <body>
   <div id="canvas-container"></div>
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
   <script type="module">
     import * as THREE from '${THREE_CDN_URL}';
 
@@ -303,7 +304,6 @@ export class ThreeRendererAdapter implements RendererAdapter {
     setTimeout(__threeCompositeLoop, 100);
     ` : ""}
   </script>
-  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
 </body>
 </html>`;
   }

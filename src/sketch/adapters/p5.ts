@@ -287,6 +287,7 @@ export class P5RendererAdapter implements RendererAdapter {
 </head>
 <body>
   <div id="canvas-container"></div>
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
   <script>
     const state = ${stateJson};
     state.canvas = { width: ${width}, height: ${height}, pixelDensity: ${pixelDensity} };
@@ -316,7 +317,6 @@ export class P5RendererAdapter implements RendererAdapter {
       }` : ""}
     }, document.getElementById('canvas-container'));
   </script>
-  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
 </body>
 </html>`;
   }

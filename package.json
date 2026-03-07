@@ -49,6 +49,8 @@
     "access": "public"
   },
   "scripts": {
+    "generate:compositor": "tsx scripts/generate-compositor.ts",
+    "prebuild": "npm run generate:compositor",
     "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",

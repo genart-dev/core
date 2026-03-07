@@ -12,10 +12,11 @@
  */
 
 import type { DesignLayer } from "@genart-dev/format";
+import { GENERATED_RENDERERS_CODE } from "./generated-renderers.js";
 
 /**
  * Generate a self-contained `<script>` block that composites design layers
- * onto a canvas. Supports all 16 layer types from the plugin packages.
+ * onto a canvas. Supports all 70 layer types from the plugin packages.
  *
  * @param layers - Design layers to embed directly (avoids JSON tag parsing)
  * @returns HTML `<script>` string to inject into standalone HTML
@@ -493,6 +494,10 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
     "guides:custom": renderCustomGuide
   };
 
+  // =================================================================
+  // Generated plugin renderers (ADR 059) — injected below
+  // =================================================================
+` + GENERATED_RENDERERS_CODE + `
   // =================================================================
   // Compositing entry point
   // =================================================================

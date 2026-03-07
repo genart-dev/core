@@ -272,6 +272,7 @@ export class Canvas2DRendererAdapter implements RendererAdapter {
 </head>
 <body>
   <canvas id="canvas" width="${width * pixelDensity}" height="${height * pixelDensity}" style="width:${width}px;height:${height}px;"></canvas>
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
   <script>
     try {
       const state = ${stateJson};
@@ -296,7 +297,6 @@ export class Canvas2DRendererAdapter implements RendererAdapter {
       document.body.textContent = 'Sketch error: ' + e.message;
     }
   </script>
-  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
 </body>
 </html>`;
   }

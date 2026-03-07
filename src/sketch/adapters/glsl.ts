@@ -547,6 +547,7 @@ export class GLSLRendererAdapter implements RendererAdapter {
 </head>
 <body>
   <canvas id="canvas" width="${width * pixelDensity}" height="${height * pixelDensity}" style="width:${width}px;height:${height}px;"></canvas>
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
   <script>
     const state = ${stateJson};
 
@@ -612,7 +613,6 @@ ${colorBindings}
     ${sketch.layers && sketch.layers.length > 0 ? generateWebGLCompositorCode() : ""}
     render();
   </script>
-  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
 </body>
 </html>`;
   }
