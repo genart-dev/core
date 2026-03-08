@@ -5,11 +5,12 @@ import type { SketchDefinition } from "@genart-dev/format";
  * in a self-contained interactive HTML preview.
  *
  * The panel includes:
- * - Seed controls (numeric input, prev/next, random)
+ * - Header with genart.dev branding, filename, renderer badge, seed + reseed
  * - Parameter sliders (auto-generated from ParamDef[])
  * - Color pickers (auto-generated from ColorDef[])
  * - Theme selector (dropdown if themes exist)
- * - Re-render button
+ * - Philosophy section
+ * - File metadata section
  * - Copy State button (outputs JSON for update_sketch)
  */
 export function generateInteractivePanel(sketch: SketchDefinition): {
@@ -25,95 +26,267 @@ export function generateInteractivePanel(sketch: SketchDefinition): {
 
 function generatePanelCSS(): string {
   return `
+    :root {
+      --gp-bg: #0a0a0a;
+      --gp-panel: #141414;
+      --gp-border: #2a2a2a;
+      --gp-text: #f0f0f0;
+      --gp-text-secondary: #aaaaaa;
+      --gp-text-muted: #666666;
+      --gp-accent: #c4342d;
+      --gp-input-bg: #1a1a1a;
+      --gp-input-border: #333333;
+      --gp-slider-track: #333333;
+      --gp-slider-thumb: #c4342d;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--gp-bg);
+      color: var(--gp-text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      font-size: 13px;
+      display: flex;
+      min-height: 100vh;
+    }
+    #canvas-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-width: 0;
+    }
+    #canvas-container canvas {
+      display: block;
+      max-width: 100%;
+      max-height: 100vh;
+    }
+
+    /* Panel */
     #genart-panel {
-      position: fixed; top: 0; right: 0; bottom: 0;
-      width: 280px; background: #1a1a1a; color: #e0e0e0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 12px; overflow-y: auto; z-index: 1000;
-      border-left: 1px solid #333; padding: 12px;
-      display: flex; flex-direction: column; gap: 8px;
+      width: 320px;
+      min-width: 320px;
+      background: var(--gp-panel);
+      border-left: 1px solid var(--gp-border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
     }
-    #genart-panel h2 {
-      margin: 0; font-size: 14px; font-weight: 600; color: #fff;
-      padding-bottom: 8px; border-bottom: 1px solid #333;
+
+    /* Header */
+    .gp-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--gp-border);
     }
-    #genart-panel .gp-section { margin-top: 4px; }
-    #genart-panel .gp-section-title {
-      font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
-      color: #888; margin-bottom: 6px;
+    .gp-header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
     }
-    #genart-panel .gp-row {
-      display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
+    .gp-brand {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gp-text-secondary);
+      letter-spacing: -0.3px;
     }
-    #genart-panel .gp-label {
-      flex: 0 0 80px; font-size: 11px; color: #aaa;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    .gp-filename {
+      font-size: 12px;
+      color: var(--gp-text-muted);
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
     }
-    #genart-panel input[type="range"] {
-      flex: 1; height: 4px; -webkit-appearance: none; appearance: none;
-      background: #444; border-radius: 2px; outline: none;
+    .gp-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
     }
-    #genart-panel input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none; width: 14px; height: 14px;
-      border-radius: 50%; background: #7c8aff; cursor: pointer;
+    .gp-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: var(--gp-accent);
+      color: #fff;
     }
-    #genart-panel input[type="number"] {
-      width: 56px; background: #222; border: 1px solid #444; color: #e0e0e0;
-      border-radius: 3px; padding: 2px 4px; font-size: 11px; text-align: right;
+    .gp-seed-display {
+      font-size: 12px;
+      color: var(--gp-text-secondary);
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
     }
-    #genart-panel input[type="color"] {
-      width: 28px; height: 22px; border: 1px solid #444; border-radius: 3px;
-      background: none; cursor: pointer; padding: 0;
+    .gp-reseed-btn {
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--gp-border);
+      color: var(--gp-text-secondary);
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
     }
-    #genart-panel select {
-      flex: 1; background: #222; border: 1px solid #444; color: #e0e0e0;
-      border-radius: 3px; padding: 3px 6px; font-size: 11px;
+    .gp-reseed-btn:hover { background: #1e1e1e; color: var(--gp-text); }
+
+    /* Sections */
+    .gp-section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--gp-border);
     }
-    #genart-panel button {
-      background: #333; border: 1px solid #555; color: #e0e0e0;
-      border-radius: 3px; padding: 4px 8px; font-size: 11px; cursor: pointer;
+    .gp-section-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gp-text-muted);
+      margin-bottom: 12px;
+      font-weight: 600;
     }
-    #genart-panel button:hover { background: #444; }
-    #genart-panel button.gp-primary {
-      background: #4a5acd; border-color: #5a6adf; color: #fff;
+
+    /* Parameter rows */
+    .gp-param-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
     }
-    #genart-panel button.gp-primary:hover { background: #5a6adf; }
-    #genart-panel .gp-seed-row {
-      display: flex; align-items: center; gap: 4px;
+    .gp-param-row:last-child { margin-bottom: 0; }
+    .gp-param-label {
+      flex: 0 0 auto;
+      min-width: 0;
+      font-size: 12px;
+      color: var(--gp-text-secondary);
+      margin-right: 12px;
     }
-    #genart-panel .gp-seed-row input[type="number"] {
-      flex: 1; width: auto;
+    .gp-param-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      background: var(--gp-slider-track);
+      border-radius: 2px;
+      outline: none;
+      margin: 0 10px;
     }
-    #genart-panel .gp-actions {
-      display: flex; gap: 6px; margin-top: 8px;
-      padding-top: 8px; border-top: 1px solid #333;
+    .gp-param-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--gp-slider-thumb);
+      cursor: pointer;
     }
-    #genart-panel .gp-actions button { flex: 1; }
-    #genart-panel .gp-toast {
-      position: fixed; bottom: 20px; right: 20px;
-      background: #4a5acd; color: #fff; padding: 8px 16px;
-      border-radius: 6px; font-size: 12px; opacity: 0;
-      transition: opacity 0.3s; pointer-events: none; z-index: 1001;
+    .gp-param-value {
+      flex: 0 0 auto;
+      min-width: 36px;
+      font-size: 12px;
+      color: var(--gp-accent);
+      text-align: right;
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
     }
-    body { margin-right: 280px; }
+
+    /* Color rows */
+    .gp-color-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .gp-color-row:last-child { margin-bottom: 0; }
+    .gp-color-label {
+      flex: 1;
+      font-size: 12px;
+      color: var(--gp-text-secondary);
+    }
+    .gp-color-input {
+      width: 32px;
+      height: 24px;
+      border: 1px solid var(--gp-border);
+      border-radius: 4px;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    /* Theme selector */
+    .gp-theme-select {
+      width: 100%;
+      background: var(--gp-input-bg);
+      border: 1px solid var(--gp-input-border);
+      color: var(--gp-text);
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-size: 12px;
+      font-family: inherit;
+    }
+
+    /* Philosophy */
+    .gp-philosophy {
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--gp-text-muted);
+    }
+
+    /* File info */
+    .gp-info-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 12px;
+      font-size: 11px;
+    }
+    .gp-info-key {
+      color: var(--gp-text-muted);
+    }
+    .gp-info-val {
+      color: var(--gp-text-secondary);
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    }
+
+    /* Toast */
+    .gp-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gp-accent);
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 1001;
+    }
   `;
 }
 
 function generatePanelHTML(sketch: SketchDefinition): string {
   const parts: string[] = [];
+  const renderer =
+    typeof sketch.renderer === "string"
+      ? sketch.renderer
+      : sketch.renderer?.type ?? "p5";
+  const filename = `${sketch.id}.genart`;
 
   parts.push(`<div id="genart-panel">`);
-  parts.push(`<h2>${escapeHtml(sketch.title)}</h2>`);
 
-  // Seed controls
-  parts.push(`<div class="gp-section">`);
-  parts.push(`<div class="gp-section-title">Seed</div>`);
-  parts.push(`<div class="gp-seed-row">`);
-  parts.push(`<button onclick="__gp_seedPrev()" title="Previous seed">&larr;</button>`);
-  parts.push(`<input type="number" id="gp-seed" value="${sketch.state.seed}" min="0" max="99999" step="1">`);
-  parts.push(`<button onclick="__gp_seedNext()" title="Next seed">&rarr;</button>`);
-  parts.push(`<button onclick="__gp_seedRandom()" title="Random seed">&#x1f3b2;</button>`);
-  parts.push(`</div></div>`);
+  // Header
+  parts.push(`<div class="gp-header">`);
+  parts.push(`<div class="gp-header-top">`);
+  parts.push(`<span class="gp-brand">genart.dev</span>`);
+  parts.push(`<span class="gp-filename">${escapeHtml(filename)}</span>`);
+  parts.push(`</div>`);
+  parts.push(`<div class="gp-meta-row">`);
+  parts.push(
+    `<span class="gp-badge">${escapeHtml(renderer.toUpperCase())}</span>`,
+  );
+  parts.push(
+    `<span class="gp-seed-display">seed: <span id="gp-seed-val">${sketch.state.seed}</span></span>`,
+  );
+  parts.push(
+    `<button class="gp-reseed-btn" onclick="__gp_seedRandom()">&#x21bb; reseed</button>`,
+  );
+  parts.push(`</div>`);
+  parts.push(`</div>`);
 
   // Parameters
   if (sketch.parameters.length > 0) {
@@ -121,10 +294,16 @@ function generatePanelHTML(sketch: SketchDefinition): string {
     parts.push(`<div class="gp-section-title">Parameters</div>`);
     for (const param of sketch.parameters) {
       const value = sketch.state.params[param.key] ?? param.default;
-      parts.push(`<div class="gp-row">`);
-      parts.push(`<span class="gp-label" title="${escapeHtml(param.label)}">${escapeHtml(param.label)}</span>`);
-      parts.push(`<input type="range" id="gp-param-${param.key}" min="${param.min}" max="${param.max}" step="${param.step}" value="${value}" oninput="__gp_paramChange('${param.key}', this.value)">`);
-      parts.push(`<input type="number" id="gp-param-val-${param.key}" min="${param.min}" max="${param.max}" step="${param.step}" value="${value}" onchange="__gp_paramChange('${param.key}', this.value)">`);
+      parts.push(`<div class="gp-param-row">`);
+      parts.push(
+        `<span class="gp-param-label">${escapeHtml(param.label)}</span>`,
+      );
+      parts.push(
+        `<input type="range" class="gp-param-slider" id="gp-param-${param.key}" min="${param.min}" max="${param.max}" step="${param.step}" value="${value}" oninput="__gp_paramChange('${param.key}', this.value)">`,
+      );
+      parts.push(
+        `<span class="gp-param-value" id="gp-param-val-${param.key}">${value}</span>`,
+      );
       parts.push(`</div>`);
     }
     parts.push(`</div>`);
@@ -137,10 +316,13 @@ function generatePanelHTML(sketch: SketchDefinition): string {
     for (let i = 0; i < sketch.colors.length; i++) {
       const colorDef = sketch.colors[i];
       const value = sketch.state.colorPalette[i] ?? colorDef.default;
-      parts.push(`<div class="gp-row">`);
-      parts.push(`<span class="gp-label" title="${escapeHtml(colorDef.label)}">${escapeHtml(colorDef.label)}</span>`);
-      parts.push(`<input type="color" id="gp-color-${i}" value="${value}" onchange="__gp_colorChange(${i}, this.value)">`);
-      parts.push(`<span id="gp-color-hex-${i}" style="font-size:10px;color:#888;">${value}</span>`);
+      parts.push(`<div class="gp-color-row">`);
+      parts.push(
+        `<span class="gp-color-label">${escapeHtml(colorDef.label)}</span>`,
+      );
+      parts.push(
+        `<input type="color" class="gp-color-input" id="gp-color-${i}" value="${value}" onchange="__gp_colorChange(${i}, this.value)">`,
+      );
       parts.push(`</div>`);
     }
     parts.push(`</div>`);
@@ -149,31 +331,66 @@ function generatePanelHTML(sketch: SketchDefinition): string {
   // Themes
   if (sketch.themes && sketch.themes.length > 0) {
     parts.push(`<div class="gp-section">`);
-    parts.push(`<div class="gp-section-title">Theme</div>`);
-    parts.push(`<div class="gp-row">`);
-    parts.push(`<select id="gp-theme" onchange="__gp_themeChange(this.value)">`);
+    parts.push(`<div class="gp-section-title">Themes</div>`);
+    parts.push(
+      `<select class="gp-theme-select" id="gp-theme" onchange="__gp_themeChange(this.value)">`,
+    );
     parts.push(`<option value="">Custom</option>`);
     for (let i = 0; i < sketch.themes.length; i++) {
-      parts.push(`<option value="${i}">${escapeHtml(sketch.themes[i].name)}</option>`);
+      parts.push(
+        `<option value="${i}">${escapeHtml(sketch.themes[i].name)}</option>`,
+      );
     }
     parts.push(`</select>`);
-    parts.push(`</div></div>`);
+    parts.push(`</div>`);
   }
 
-  // Actions
-  parts.push(`<div class="gp-actions">`);
-  parts.push(`<button class="gp-primary" onclick="__gp_rerender()">Re-render</button>`);
-  parts.push(`<button onclick="__gp_copyState()">Copy State</button>`);
+  // Philosophy
+  if (sketch.philosophy) {
+    parts.push(`<div class="gp-section">`);
+    parts.push(`<div class="gp-section-title">Philosophy</div>`);
+    parts.push(
+      `<div class="gp-philosophy">${escapeHtml(sketch.philosophy)}</div>`,
+    );
+    parts.push(`</div>`);
+  }
+
+  // File info
+  parts.push(`<div class="gp-section">`);
+  parts.push(`<div class="gp-section-title">File</div>`);
+  parts.push(`<div class="gp-info-grid">`);
+  parts.push(`<span class="gp-info-key">id:</span>`);
+  parts.push(
+    `<span class="gp-info-val">${escapeHtml(sketch.id)}</span>`,
+  );
+  parts.push(`<span class="gp-info-key">renderer:</span>`);
+  parts.push(
+    `<span class="gp-info-val">${escapeHtml(renderer)}</span>`,
+  );
+  parts.push(`<span class="gp-info-key">canvas:</span>`);
+  parts.push(
+    `<span class="gp-info-val">${sketch.canvas.width} &times; ${sketch.canvas.height}</span>`,
+  );
+  parts.push(`<span class="gp-info-key">format:</span>`);
+  parts.push(
+    `<span class="gp-info-val">genart ${(sketch as Record<string, unknown>).genart ?? "1.1"}</span>`,
+  );
+  if (sketch.agent) {
+    parts.push(`<span class="gp-info-key">agent:</span>`);
+    parts.push(
+      `<span class="gp-info-val">${escapeHtml(sketch.agent)}</span>`,
+    );
+  }
+  parts.push(`</div>`);
   parts.push(`</div>`);
 
-  parts.push(`</div>`);
+  parts.push(`</div>`); // end #genart-panel
   parts.push(`<div class="gp-toast" id="gp-toast"></div>`);
 
   return parts.join("\n");
 }
 
 function generatePanelJS(sketch: SketchDefinition): string {
-  // Build the initial state snapshot for the panel
   const colorsJson = JSON.stringify(sketch.colors);
   const themesJson = JSON.stringify(sketch.themes ?? []);
   const sketchId = sketch.id;
@@ -189,37 +406,32 @@ function generatePanelJS(sketch: SketchDefinition): string {
     function __gp_seedPrev() {
       var s = Math.max(0, __gp_state.seed - 1);
       __gp_state.seed = s;
-      document.getElementById('gp-seed').value = s;
+      document.getElementById('gp-seed-val').textContent = s;
       __gp_rerender && __gp_rerender();
     }
     function __gp_seedNext() {
       __gp_state.seed = __gp_state.seed + 1;
-      document.getElementById('gp-seed').value = __gp_state.seed;
+      document.getElementById('gp-seed-val').textContent = __gp_state.seed;
       __gp_rerender && __gp_rerender();
     }
     function __gp_seedRandom() {
       var s = Math.floor(Math.random() * 100000);
       __gp_state.seed = s;
-      document.getElementById('gp-seed').value = s;
+      document.getElementById('gp-seed-val').textContent = s;
       __gp_rerender && __gp_rerender();
     }
-    document.getElementById('gp-seed').addEventListener('change', function(e) {
-      __gp_state.seed = parseInt(e.target.value, 10) || 0;
-      __gp_rerender && __gp_rerender();
-    });
 
     function __gp_paramChange(key, val) {
       var v = parseFloat(val);
       __gp_state.params[key] = v;
       __gp_state.PARAMS && (__gp_state.PARAMS[key] = v);
       document.getElementById('gp-param-' + key).value = v;
-      document.getElementById('gp-param-val-' + key).value = v;
+      document.getElementById('gp-param-val-' + key).textContent = v;
       __gp_rerender && __gp_rerender();
     }
 
     function __gp_colorChange(idx, val) {
       __gp_state.colorPalette[idx] = val;
-      document.getElementById('gp-color-hex-' + idx).textContent = val;
       // Update COLORS map
       if (__gp_state.COLORS && __gp_colorDefs[idx]) {
         __gp_state.COLORS[__gp_colorDefs[idx].key] = val;
@@ -238,8 +450,6 @@ function generatePanelJS(sketch: SketchDefinition): string {
         __gp_state.colorPalette[i] = theme.colors[i];
         var el = document.getElementById('gp-color-' + i);
         if (el) el.value = theme.colors[i];
-        var hexEl = document.getElementById('gp-color-hex-' + i);
-        if (hexEl) hexEl.textContent = theme.colors[i];
         if (__gp_state.COLORS && __gp_colorDefs[i]) {
           __gp_state.COLORS[__gp_colorDefs[i].key] = theme.colors[i];
         }
