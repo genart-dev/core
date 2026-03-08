@@ -29,15 +29,14 @@ describe("generateInteractivePanel", () => {
 
   it("includes seed controls", () => {
     const { html } = generateInteractivePanel(makeSketch());
-    expect(html).toContain('id="gp-seed"');
-    expect(html).toContain("__gp_seedPrev");
-    expect(html).toContain("__gp_seedNext");
+    expect(html).toContain('id="gp-seed-val"');
     expect(html).toContain("__gp_seedRandom");
+    expect(html).toContain("reseed");
   });
 
   it("sets initial seed value", () => {
     const { html } = generateInteractivePanel(makeSketch({ state: { seed: 1234, params: {}, colorPalette: [] } }));
-    expect(html).toContain('value="1234"');
+    expect(html).toContain(">1234<");
   });
 
   it("generates parameter sliders from ParamDef[]", () => {
@@ -103,12 +102,9 @@ describe("generateInteractivePanel", () => {
     expect(html).not.toContain("gp-color-");
   });
 
-  it("includes Re-render and Copy State buttons", () => {
-    const { html } = generateInteractivePanel(makeSketch());
-    expect(html).toContain("Re-render");
-    expect(html).toContain("Copy State");
-    expect(html).toContain("__gp_rerender");
-    expect(html).toContain("__gp_copyState");
+  it("includes Copy State button", () => {
+    const { js } = generateInteractivePanel(makeSketch());
+    expect(js).toContain("__gp_copyState");
   });
 
   it("JS includes sketch ID for copy state", () => {
@@ -116,9 +112,9 @@ describe("generateInteractivePanel", () => {
     expect(js).toContain("my-art-01");
   });
 
-  it("escapes HTML in title", () => {
-    const { html } = generateInteractivePanel(makeSketch({ title: '<script>alert("xss")</script>' }));
-    expect(html).not.toContain("<script>");
+  it("escapes HTML in philosophy", () => {
+    const { html } = generateInteractivePanel(makeSketch({ philosophy: '<script>alert("xss")</script>' }));
+    expect(html).not.toContain("<script>alert");
     expect(html).toContain("&lt;script&gt;");
   });
 

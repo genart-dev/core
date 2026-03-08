@@ -283,7 +283,7 @@ describe("SVGRendererAdapter", () => {
       const html = adapter.generateInteractiveHTML(sketch);
       expect(html).toContain("Preview");
       expect(html).toContain('id="genart-panel"');
-      expect(html).toContain('id="gp-seed"');
+      expect(html).toContain('id="gp-seed-val"');
       expect(html).toContain("__gp_rerender");
       expect(html).toContain("svg-container");
     });
