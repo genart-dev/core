@@ -13,7 +13,7 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
-import { extractComponentCode, extractSymbolData } from "./component-utils.js";
+import { extractComponentCode, extractSymbolData, generateDataInjection } from "./component-utils.js";
 import { generateInteractivePanel } from "../interactive-panel.js";
 import { generateCompositorScript, generateWebGLCompositorCode } from "../../design/iframe-compositor.js";
 
@@ -286,6 +286,7 @@ export class ThreeRendererAdapter implements RendererAdapter {
 
     ${extractComponentCode(sketch.components)}
     ${extractSymbolData(sketch.symbols)}
+    ${generateDataInjection(sketch.data, sketch.components)}
     ${sketch.algorithm}
 
     const __container = document.getElementById('canvas-container');
@@ -341,6 +342,7 @@ export class ThreeRendererAdapter implements RendererAdapter {
 
     ${extractComponentCode(sketch.components)}
     ${extractSymbolData(sketch.symbols)}
+    ${generateDataInjection(sketch.data, sketch.components)}
     ${sketch.algorithm}
 
     ${panel.js}

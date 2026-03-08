@@ -13,7 +13,7 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
-import { extractComponentCode, extractSymbolData } from "./component-utils.js";
+import { extractComponentCode, extractSymbolData, generateDataInjection } from "./component-utils.js";
 import { generateInteractivePanel } from "../interactive-panel.js";
 import { generateCompositorScript } from "../../design/iframe-compositor.js";
 
@@ -301,6 +301,7 @@ export class P5RendererAdapter implements RendererAdapter {
 
     ${extractComponentCode(sketch.components)}
     ${extractSymbolData(sketch.symbols)}
+    ${generateDataInjection(sketch.data, sketch.components)}
     ${sketch.algorithm}
 
     new p5(function(p) {
@@ -392,6 +393,7 @@ export class P5RendererAdapter implements RendererAdapter {
 
     ${extractComponentCode(sketch.components)}
     ${extractSymbolData(sketch.symbols)}
+    ${generateDataInjection(sketch.data, sketch.components)}
     ${sketch.algorithm}
 
     ${panel.js}

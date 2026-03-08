@@ -13,7 +13,7 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
-import { extractComponentCode, extractSymbolData } from "./component-utils.js";
+import { extractComponentCode, extractSymbolData, generateDataInjection } from "./component-utils.js";
 import { generateInteractivePanel } from "../interactive-panel.js";
 import { generateSVGLayerScript } from "../../design/iframe-compositor.js";
 
@@ -248,6 +248,7 @@ export class SVGRendererAdapter implements RendererAdapter {
 
     ${extractComponentCode(sketch.components)}
     ${extractSymbolData(sketch.symbols)}
+    ${generateDataInjection(sketch.data, sketch.components)}
     ${sketch.algorithm}
 
     const module = sketch(state);
@@ -286,6 +287,7 @@ export class SVGRendererAdapter implements RendererAdapter {
 
     ${extractComponentCode(sketch.components)}
     ${extractSymbolData(sketch.symbols)}
+    ${generateDataInjection(sketch.data, sketch.components)}
     ${sketch.algorithm}
 
     ${panel.js}
