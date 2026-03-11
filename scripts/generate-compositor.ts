@@ -65,6 +65,7 @@ const PLUGIN_DIRS = [
   "plugin-shapes",
   "plugin-filters",
   "plugin-typography",
+  "plugin-patterns",
 ];
 
 // ---------------------------------------------------------------------------
