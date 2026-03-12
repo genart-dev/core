@@ -66,6 +66,8 @@ const PLUGIN_DIRS = [
   "plugin-filters",
   "plugin-typography",
   "plugin-patterns",
+  "plugin-terrain",
+  "plugin-particles",
 ];
 
 // ---------------------------------------------------------------------------
