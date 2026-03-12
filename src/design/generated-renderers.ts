@@ -4,7 +4,7 @@
  * Contains IIFE-wrapped plugin bundles that register render() functions
  * for 91 layer types into the RENDERERS map.
  *
- * Generated: 2026-03-12T04:26:58.133Z
+ * Generated: 2026-03-12T17:10:50.768Z
  */
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -761,7 +761,6 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var index_exports = {};
 __export(index_exports, {
   applyDepthEasing: () => applyDepthEasing,
-  atmosphereLayerType: () => atmosphereLayerType,
   clipLineToRect: () => clipLineToRect,
   default: () => index_default,
   depthEasedPositions: () => depthEasedPositions,
@@ -1766,277 +1765,6 @@ var perspectiveFloorLayerType = {
   }
 };
 
-// src/atmosphere.ts
-var ATMOSPHERE_PRESETS = {
-  hazy: {
-    valueCompression: 0.4,
-    saturationReduction: 0.5,
-    colorTemp: 0,
-    atmosphereColor: "#c8d4e0",
-    edgeSoftness: 0.3,
-    intensity: 0.6
-  },
-  clear: {
-    valueCompression: 0.15,
-    saturationReduction: 0.2,
-    colorTemp: 0.05,
-    atmosphereColor: "#e8eef5",
-    edgeSoftness: 0.15,
-    intensity: 0.3
-  },
-  "golden-hour": {
-    valueCompression: 0.35,
-    saturationReduction: 0.25,
-    colorTemp: 0.5,
-    atmosphereColor: "#f5d4a0",
-    edgeSoftness: 0.4,
-    intensity: 0.55
-  },
-  overcast: {
-    valueCompression: 0.5,
-    saturationReduction: 0.6,
-    colorTemp: -0.2,
-    atmosphereColor: "#b8bfc8",
-    edgeSoftness: 0.5,
-    intensity: 0.7
-  }
-};
-function parseHexToRgb(hex) {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.substring(0, 2), 16);
-  const g = parseInt(h.substring(2, 4), 16);
-  const b = parseInt(h.substring(4, 6), 16);
-  return [
-    isNaN(r) ? 200 : r,
-    isNaN(g) ? 212 : g,
-    isNaN(b) ? 224 : b
-  ];
-}
-function applyColorTemp(baseHex, temp) {
-  const [r, g, b] = parseHexToRgb(baseHex);
-  const t = Math.abs(temp);
-  let tr, tg, tb;
-  if (temp > 0) {
-    tr = 255;
-    tg = 204;
-    tb = 128;
-  } else {
-    tr = 128;
-    tg = 176;
-    tb = 255;
-  }
-  const mix = Math.min(t, 1);
-  const nr = Math.round(r + (tr - r) * mix);
-  const ng = Math.round(g + (tg - g) * mix);
-  const nb = Math.round(b + (tb - b) * mix);
-  return \`#\${nr.toString(16).padStart(2, "0")}\${ng.toString(16).padStart(2, "0")}\${nb.toString(16).padStart(2, "0")}\`;
-}
-var ATMOSPHERE_PROPERTIES = [
-  {
-    key: "horizonPosition",
-    label: "Horizon Position",
-    type: "number",
-    default: 40,
-    min: 0,
-    max: 100,
-    step: 1,
-    group: "depth"
-  },
-  {
-    key: "depthEasing",
-    label: "Depth Easing",
-    type: "select",
-    default: "quadratic",
-    options: [
-      { value: "linear", label: "Linear" },
-      { value: "quadratic", label: "Quadratic" },
-      { value: "cubic", label: "Cubic" },
-      { value: "exponential", label: "Exponential" }
-    ],
-    group: "depth"
-  },
-  {
-    key: "valueCompression",
-    label: "Value Compression",
-    type: "number",
-    default: 0.3,
-    min: 0,
-    max: 1,
-    step: 0.01,
-    group: "atmosphere"
-  },
-  {
-    key: "saturationReduction",
-    label: "Saturation Reduction",
-    type: "number",
-    default: 0.4,
-    min: 0,
-    max: 1,
-    step: 0.01,
-    group: "atmosphere"
-  },
-  {
-    key: "colorTemp",
-    label: "Color Temperature",
-    type: "number",
-    default: 0.1,
-    min: -1,
-    max: 1,
-    step: 0.01,
-    group: "atmosphere"
-  },
-  {
-    key: "atmosphereColor",
-    label: "Atmosphere Color",
-    type: "color",
-    default: "#c8d4e0",
-    group: "atmosphere"
-  },
-  {
-    key: "edgeSoftness",
-    label: "Edge Softness",
-    type: "number",
-    default: 0.3,
-    min: 0,
-    max: 1,
-    step: 0.01,
-    group: "atmosphere"
-  },
-  {
-    key: "intensity",
-    label: "Intensity",
-    type: "number",
-    default: 0.5,
-    min: 0,
-    max: 1,
-    step: 0.01,
-    group: "atmosphere"
-  },
-  {
-    key: "preset",
-    label: "Preset",
-    type: "select",
-    default: "hazy",
-    options: [
-      { value: "hazy", label: "Hazy" },
-      { value: "clear", label: "Clear" },
-      { value: "golden-hour", label: "Golden Hour" },
-      { value: "overcast", label: "Overcast" }
-    ],
-    group: "preset"
-  }
-];
-function resolveProperties(properties) {
-  const presetKey = properties.preset ?? "hazy";
-  const preset = ATMOSPHERE_PRESETS[presetKey] ?? ATMOSPHERE_PRESETS.hazy;
-  return {
-    horizonPosition: properties.horizonPosition ?? 40,
-    depthEasing: properties.depthEasing ?? "quadratic",
-    valueCompression: properties.valueCompression ?? preset.valueCompression,
-    saturationReduction: properties.saturationReduction ?? preset.saturationReduction,
-    colorTemp: properties.colorTemp ?? preset.colorTemp,
-    atmosphereColor: properties.atmosphereColor ?? preset.atmosphereColor,
-    edgeSoftness: properties.edgeSoftness ?? preset.edgeSoftness,
-    intensity: properties.intensity ?? preset.intensity
-  };
-}
-var atmosphereLayerType = {
-  typeId: "perspective:atmosphere",
-  displayName: "Atmospheric Perspective",
-  icon: "cloud",
-  category: "adjustment",
-  properties: ATMOSPHERE_PROPERTIES,
-  propertyEditorId: "perspective:atmosphere-editor",
-  createDefault() {
-    const props = {};
-    for (const schema of ATMOSPHERE_PROPERTIES) {
-      props[schema.key] = schema.default;
-    }
-    return props;
-  },
-  render(properties, ctx, bounds, _resources) {
-    const w = bounds.width;
-    const h = bounds.height;
-    if (w <= 0 || h <= 0) return;
-    const resolved = resolveProperties(properties);
-    const {
-      horizonPosition,
-      depthEasing,
-      valueCompression,
-      saturationReduction,
-      colorTemp,
-      atmosphereColor,
-      edgeSoftness,
-      intensity
-    } = resolved;
-    if (intensity <= 0 || valueCompression <= 0 && saturationReduction <= 0) return;
-    const horizonPx = bounds.y + horizonPosition / 100 * h;
-    const bottomY = bounds.y + h;
-    if (horizonPx >= bottomY) return;
-    const atmColor = applyColorTemp(atmosphereColor, colorTemp);
-    const [r, g, b] = parseHexToRgb(atmColor);
-    ctx.save();
-    const softOffset = edgeSoftness * h * 0.1;
-    const gradStart = horizonPx - softOffset;
-    const gradEnd = bottomY;
-    const stops = 16;
-    const grad = ctx.createLinearGradient(0, gradStart, 0, gradEnd);
-    for (let i = 0; i <= stops; i++) {
-      const t = i / stops;
-      const depthT = applyDepthEasing(Math.max(0, t), depthEasing);
-      const alpha = depthT * intensity * valueCompression;
-      grad.addColorStop(t, \`rgba(\${r},\${g},\${b},\${alpha})\`);
-    }
-    ctx.fillStyle = grad;
-    ctx.fillRect(bounds.x, gradStart, w, gradEnd - gradStart);
-    if (saturationReduction > 0) {
-      const grayGrad = ctx.createLinearGradient(0, gradStart, 0, gradEnd);
-      for (let i = 0; i <= stops; i++) {
-        const t = i / stops;
-        const depthT = applyDepthEasing(Math.max(0, t), depthEasing);
-        const alpha = depthT * intensity * saturationReduction * 0.3;
-        grayGrad.addColorStop(t, \`rgba(128,128,128,\${alpha})\`);
-      }
-      ctx.globalCompositeOperation = "saturation";
-      ctx.fillStyle = grayGrad;
-      ctx.fillRect(bounds.x, gradStart, w, gradEnd - gradStart);
-    }
-    ctx.restore();
-  },
-  validate(properties) {
-    const errors = [];
-    const hp = properties.horizonPosition;
-    if (typeof hp === "number" && (hp < 0 || hp > 100)) {
-      errors.push({ property: "horizonPosition", message: "Must be 0\\u2013100" });
-    }
-    const vc = properties.valueCompression;
-    if (typeof vc === "number" && (vc < 0 || vc > 1)) {
-      errors.push({ property: "valueCompression", message: "Must be 0\\u20131" });
-    }
-    const sr = properties.saturationReduction;
-    if (typeof sr === "number" && (sr < 0 || sr > 1)) {
-      errors.push({ property: "saturationReduction", message: "Must be 0\\u20131" });
-    }
-    const ct = properties.colorTemp;
-    if (typeof ct === "number" && (ct < -1 || ct > 1)) {
-      errors.push({ property: "colorTemp", message: "Must be -1 to 1" });
-    }
-    const es = properties.edgeSoftness;
-    if (typeof es === "number" && (es < 0 || es > 1)) {
-      errors.push({ property: "edgeSoftness", message: "Must be 0\\u20131" });
-    }
-    const int = properties.intensity;
-    if (typeof int === "number" && (int < 0 || int > 1)) {
-      errors.push({ property: "intensity", message: "Must be 0\\u20131" });
-    }
-    const preset = properties.preset;
-    if (typeof preset === "string" && !ATMOSPHERE_PRESETS[preset]) {
-      errors.push({ property: "preset", message: "Unknown preset" });
-    }
-    return errors.length > 0 ? errors : null;
-  }
-};
-
 // src/perspective-tools.ts
 var PERSPECTIVE_GRID_TYPES = {
   "one-point": onePointGridLayerType,
@@ -2241,93 +1969,26 @@ var clearPerspectiveGuidesTool = {
     return textResult(\`Removed \${perspectiveIds.length} perspective layer(s).\`);
   }
 };
-var addAtmosphereTool = {
-  name: "add_atmosphere",
-  description: "Add an atmospheric perspective post-process layer. Applies depth-aware value compression, saturation reduction, and color temperature shift. Place near the top of the layer stack. Presets: hazy, clear, golden-hour, overcast.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      preset: {
-        type: "string",
-        enum: ["hazy", "clear", "golden-hour", "overcast"],
-        description: "Atmosphere preset (default: hazy)."
-      },
-      horizonPosition: {
-        type: "number",
-        description: "Horizon Y position as 0\\u2013100 percentage (default: 40)."
-      },
-      intensity: {
-        type: "number",
-        description: "Overall effect strength 0\\u20131 (default: 0.5)."
-      },
-      atmosphereColor: {
-        type: "string",
-        description: "Color things fade toward (default: '#c8d4e0')."
-      },
-      colorTemp: {
-        type: "number",
-        description: "Color temperature shift: -1 cool blue to +1 warm orange (default: 0.1)."
-      }
-    }
-  },
-  async handler(input, context) {
-    const defaults = atmosphereLayerType.createDefault();
-    const properties = { ...defaults };
-    if (input.preset !== void 0) {
-      const presetKey = input.preset;
-      const preset = ATMOSPHERE_PRESETS[presetKey];
-      if (!preset) return errorResult(\`Unknown preset '\${presetKey}'.\`);
-      properties.preset = presetKey;
-      properties.valueCompression = preset.valueCompression;
-      properties.saturationReduction = preset.saturationReduction;
-      properties.colorTemp = preset.colorTemp;
-      properties.atmosphereColor = preset.atmosphereColor;
-      properties.edgeSoftness = preset.edgeSoftness;
-      properties.intensity = preset.intensity;
-    }
-    if (input.horizonPosition !== void 0) properties.horizonPosition = input.horizonPosition;
-    if (input.intensity !== void 0) properties.intensity = input.intensity;
-    if (input.atmosphereColor !== void 0) properties.atmosphereColor = input.atmosphereColor;
-    if (input.colorTemp !== void 0) properties.colorTemp = input.colorTemp;
-    const id = generateLayerId();
-    const layer = {
-      id,
-      type: atmosphereLayerType.typeId,
-      name: atmosphereLayerType.displayName,
-      visible: true,
-      locked: false,
-      opacity: 1,
-      blendMode: "normal",
-      transform: fullCanvasTransform(context),
-      properties
-    };
-    context.layers.add(layer);
-    context.emitChange("layer-added");
-    return textResult(\`Added Atmospheric Perspective layer '\${id}'.\`);
-  }
-};
 var perspectiveMcpTools = [
   addPerspectiveGridTool,
   addPerspectiveFloorTool,
   setVanishingPointTool,
-  clearPerspectiveGuidesTool,
-  addAtmosphereTool
+  clearPerspectiveGuidesTool
 ];
 
 // src/index.ts
 var perspectivePlugin = {
   id: "perspective",
   name: "Perspective Grids",
-  version: "0.2.0",
+  version: "0.1.0",
   tier: "free",
-  description: "Perspective guides: one-point, two-point, three-point, isometric grids, floor plane, and atmospheric perspective.",
+  description: "Perspective guides: one-point, two-point, three-point, isometric grids, and floor plane.",
   layerTypes: [
     onePointGridLayerType,
     twoPointGridLayerType,
     threePointGridLayerType,
     isometricGridLayerType,
-    perspectiveFloorLayerType,
-    atmosphereLayerType
+    perspectiveFloorLayerType
   ],
   tools: [],
   exportHandlers: [],
@@ -2341,7 +2002,6 @@ var index_default = perspectivePlugin;
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   applyDepthEasing,
-  atmosphereLayerType,
   clipLineToRect,
   depthEasedPositions,
   depthStyle,
@@ -2387,12 +2047,6 @@ var index_default = perspectivePlugin;
         lt.render(properties, ctx, bounds, {});
       };
     })(lt_perspective_floor);
-    var lt_perspective_atmosphere = __plugin.layerTypes.find(function(t) { return t.typeId === "perspective:atmosphere"; });
-    if (lt_perspective_atmosphere) __R["perspective:atmosphere"] = (function(lt) {
-      return function(ctx, properties, bounds) {
-        lt.render(properties, ctx, bounds, {});
-      };
-    })(lt_perspective_atmosphere);
     }
   })(RENDERERS);
 
@@ -3187,17 +2841,13 @@ var index_exports = {};
 __export(index_exports, {
   BRUSH_PRESETS: () => BRUSH_PRESETS,
   FILL_PRESETS: () => FILL_PRESETS,
-  applyDepthMapping: () => applyDepthMapping,
   applyVerticalMask: () => applyVerticalMask,
   charcoalLayerType: () => charcoalLayerType,
   clearTipCache: () => clearTipCache,
-  convertAlgorithmData: () => convertAlgorithmData,
-  convertPathsToStrokes: () => convertPathsToStrokes,
   curlAt: () => curlAt,
   default: () => index_default,
   divergenceAt: () => divergenceAt,
   fillLayerType: () => fillLayerType,
-  flowLinesLayerType: () => flowLinesLayerType,
   generateRoundTip: () => generateRoundTip,
   generateTextureTip: () => generateTextureTip,
   getBrushPreset: () => getBrushPreset,
@@ -3206,13 +2856,10 @@ __export(index_exports, {
   inkLayerType: () => inkLayerType,
   isTextureTipCached: () => isTextureTipCached,
   linearField: () => linearField,
-  markFieldLayerType: () => markFieldLayerType,
   noiseField: () => noiseField,
   oilAcrylicLayerType: () => oilAcrylicLayerType,
   paintingMcpTools: () => paintingMcpTools,
-  parseDepthMapping: () => parseDepthMapping,
   parseField: () => parseField,
-  parsePathSource: () => parsePathSource,
   pastelLayerType: () => pastelLayerType,
   preloadTextureTip: () => preloadTextureTip,
   radialField: () => radialField,
@@ -3251,7 +2898,7 @@ function createValueNoise(seed) {
   function fade(t) {
     return t * t * t * (t * (t * 6 - 15) + 10);
   }
-  function lerp9(a, b, t) {
+  function lerp8(a, b, t) {
     return a + t * (b - a);
   }
   function grad(hash, x, y) {
@@ -3271,9 +2918,9 @@ function createValueNoise(seed) {
     const ab = perm[perm[xi] + yi + 1];
     const ba = perm[perm[xi + 1] + yi];
     const bb = perm[perm[xi + 1] + yi + 1];
-    const val = lerp9(
-      lerp9(grad(aa, xf, yf), grad(ba, xf - 1, yf), u),
-      lerp9(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u),
+    const val = lerp8(
+      lerp8(grad(aa, xf, yf), grad(ba, xf - 1, yf), u),
+      lerp8(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u),
       v
     );
     return (val + 1) * 0.5;
@@ -3444,43 +3091,7 @@ function applyVerticalMask(field, centerY, spread) {
   });
   return { cols, rows, samples: newSamples };
 }
-function zeroField(cols, rows) {
-  const count = cols * rows;
-  const samples = new Array(count);
-  for (let i = 0; i < count; i++) {
-    samples[i] = { dx: 0, dy: 0, magnitude: 0 };
-  }
-  return { cols, rows, samples };
-}
-function convertAlgorithmData(data, cols, rows) {
-  const count = cols * rows;
-  const samples = new Array(count);
-  const isVector = data.length === count * 3;
-  if (isVector) {
-    for (let i = 0; i < count; i++) {
-      const o = i * 3;
-      samples[i] = { dx: data[o], dy: data[o + 1], magnitude: data[o + 2] };
-    }
-  } else {
-    for (let i = 0; i < count; i++) {
-      samples[i] = { dx: 0, dy: 0, magnitude: data[i] ?? 0 };
-    }
-  }
-  return { cols, rows, samples };
-}
 function parseField(fieldStr, cols = 20, rows = 20) {
-  if (fieldStr.startsWith("algorithm:")) {
-    const channelName = fieldStr.slice("algorithm:".length);
-    const algData = typeof globalThis !== "undefined" ? globalThis.__genart_data : void 0;
-    if (algData && algData[channelName] instanceof Float32Array) {
-      return convertAlgorithmData(
-        algData[channelName],
-        algData.cols ?? cols,
-        algData.rows ?? rows
-      );
-    }
-    return zeroField(cols, rows);
-  }
   if (fieldStr.startsWith("{")) {
     return JSON.parse(fieldStr);
   }
@@ -3759,18 +3370,6 @@ var WATERCOLOR_PROPERTIES = [
     group: "paint"
   },
   {
-    key: "paintMode",
-    label: "Paint Mode",
-    type: "select",
-    default: "multiply",
-    options: [
-      { value: "multiply", label: "Multiply (darken)" },
-      { value: "normal", label: "Normal (opaque)" },
-      { value: "screen", label: "Screen (lighten)" }
-    ],
-    group: "paint"
-  },
-  {
     key: "edgeStyle",
     label: "Edge Style",
     type: "select",
@@ -3881,7 +3480,6 @@ var watercolorLayerType = {
     const debugOpacity = properties.debugOpacity ?? 0.7;
     const debugMode = properties.debugMode ?? "all";
     const granulation = properties.granulation ?? 0.3;
-    const paintMode = properties.paintMode ?? "multiply";
     const edgeStyle = properties.edgeStyle ?? "soft";
     const seed = properties.seed ?? 0;
     const layerOpacity = properties.opacity ?? 1;
@@ -3949,19 +3547,9 @@ var watercolorLayerType = {
           const dr = data[i];
           const dg = data[i + 1];
           const db = data[i + 2];
-          if (paintMode === "screen") {
-            data[i] = Math.round(lerp(dr, 255 - (255 - dr) * (255 - pr) / 255, finalAlpha));
-            data[i + 1] = Math.round(lerp(dg, 255 - (255 - dg) * (255 - pg) / 255, finalAlpha));
-            data[i + 2] = Math.round(lerp(db, 255 - (255 - db) * (255 - pb) / 255, finalAlpha));
-          } else if (paintMode === "normal") {
-            data[i] = Math.round(lerp(dr, pr, finalAlpha));
-            data[i + 1] = Math.round(lerp(dg, pg, finalAlpha));
-            data[i + 2] = Math.round(lerp(db, pb, finalAlpha));
-          } else {
-            data[i] = Math.round(lerp(dr, dr * pr / 255, finalAlpha));
-            data[i + 1] = Math.round(lerp(dg, dg * pg / 255, finalAlpha));
-            data[i + 2] = Math.round(lerp(db, db * pb / 255, finalAlpha));
-          }
+          data[i] = Math.round(lerp(dr, dr * pr / 255, finalAlpha));
+          data[i + 1] = Math.round(lerp(dg, dg * pg / 255, finalAlpha));
+          data[i + 2] = Math.round(lerp(db, db * pb / 255, finalAlpha));
         }
       }
       ctx.putImageData(imageData, bounds.x, bounds.y);
@@ -3990,18 +3578,6 @@ var INK_PROPERTIES = [
   { key: "fieldRows", label: "Field Rows", type: "number", default: 20, min: 4, max: 40, step: 1, group: "field" },
   { key: "colors", label: "Colors", type: "string", default: '["#1a1a1a"]', group: "paint" },
   { key: "weight", label: "Stroke Weight", type: "number", default: 2, min: 0.5, max: 50, step: 0.5, group: "paint" },
-  {
-    key: "paintMode",
-    label: "Paint Mode",
-    type: "select",
-    default: "multiply",
-    options: [
-      { value: "multiply", label: "Multiply (darken)" },
-      { value: "normal", label: "Normal (opaque)" },
-      { value: "screen", label: "Screen (lighten)" }
-    ],
-    group: "paint"
-  },
   {
     key: "taper",
     label: "Taper",
@@ -4060,7 +3636,6 @@ var inkLayerType = {
     const rows = properties.fieldRows ?? 20;
     const colorsStr = properties.colors ?? '["#1a1a1a"]';
     const weight = properties.weight ?? 2;
-    const paintMode = properties.paintMode ?? "multiply";
     const taper = properties.taper ?? "none";
     const style = properties.style ?? "fluid";
     const layerOpacity = properties.opacity ?? 1;
@@ -4075,32 +3650,25 @@ var inkLayerType = {
     if (w <= 0 || h <= 0) return;
     const field = parseField(fieldStr, cols, rows);
     const rand = mulberry32(seed);
-    let colorList;
+    let inkColor = "#1a1a1a";
     try {
-      colorList = JSON.parse(colorsStr);
+      const parsed = JSON.parse(colorsStr);
+      if (parsed.length > 0) inkColor = parsed[0];
     } catch {
-      colorList = [];
     }
-    if (colorList.length === 0) colorList = ["#1a1a1a"];
     const streamSpacing = Math.max(4, Math.round(Math.min(w, h) / 40));
     const stepLen = streamSpacing * 0.6;
     const maxSteps = Math.round(Math.min(w, h) / stepLen * 0.4);
     ctx.save();
+    ctx.strokeStyle = inkColor;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    if (paintMode === "screen") {
-      ctx.globalCompositeOperation = "screen";
-    } else if (paintMode === "normal") {
-      ctx.globalCompositeOperation = "source-over";
-    } else {
-      ctx.globalCompositeOperation = "multiply";
-    }
     const scratchyGap = style === "scratchy" ? 0.35 : 0;
-    let streamIndex = 0;
     for (let gy = streamSpacing / 2; gy < h; gy += streamSpacing) {
       const ny_seed = h > 1 ? gy / (h - 1) : 0;
       const vMask = maskCenterY >= 0 ? Math.exp(-((ny_seed - maskCenterY) ** 2) / (2 * maskSpread * maskSpread)) : 1;
       if (vMask < 0.05) continue;
+      ctx.globalAlpha = layerOpacity * vMask;
       for (let gx = streamSpacing / 2; gx < w; gx += streamSpacing) {
         if (style === "scratchy" && rand() < 0.4) continue;
         const points = [];
@@ -4117,8 +3685,6 @@ var inkLayerType = {
           cy += sample.dy * stepLen;
         }
         if (points.length < 2) continue;
-        const baseColorIdx = streamIndex % colorList.length;
-        streamIndex++;
         ctx.beginPath();
         ctx.moveTo(points[0][0], points[0][1]);
         for (let p = 1; p < points.length; p++) {
@@ -4137,16 +3703,6 @@ var inkLayerType = {
           if (style === "brush") {
             w_local *= 0.7 + rand() * 0.6;
           }
-          let strokeColor;
-          if (colorList.length === 1) {
-            strokeColor = colorList[0];
-          } else {
-            const ct = t * (colorList.length - 1);
-            const ci = Math.floor(ct + baseColorIdx) % colorList.length;
-            strokeColor = colorList[ci];
-          }
-          ctx.strokeStyle = strokeColor;
-          ctx.globalAlpha = layerOpacity * vMask;
           ctx.lineWidth = Math.max(0.3, w_local);
           ctx.lineTo(points[p][0], points[p][1]);
           ctx.stroke();
@@ -4171,18 +3727,6 @@ var CHARCOAL_PROPERTIES = [
   { key: "fieldCols", label: "Field Columns", type: "number", default: 20, min: 4, max: 40, step: 1, group: "field" },
   { key: "fieldRows", label: "Field Rows", type: "number", default: 20, min: 4, max: 40, step: 1, group: "field" },
   { key: "colors", label: "Colors", type: "string", default: '["#2a2a2a"]', group: "paint" },
-  {
-    key: "paintMode",
-    label: "Paint Mode",
-    type: "select",
-    default: "multiply",
-    options: [
-      { value: "multiply", label: "Multiply (darken)" },
-      { value: "normal", label: "Normal (opaque)" },
-      { value: "screen", label: "Screen (lighten)" }
-    ],
-    group: "paint"
-  },
   { key: "density", label: "Density", type: "number", default: 0.5, min: 0, max: 1, step: 0.01, group: "paint" },
   { key: "smear", label: "Smear", type: "boolean", default: false, group: "paint" },
   { key: "grain", label: "Grain", type: "number", default: 0.5, min: 0, max: 1, step: 0.01, group: "paint" },
@@ -4218,7 +3762,6 @@ var charcoalLayerType = {
     const cols = properties.fieldCols ?? 20;
     const rows = properties.fieldRows ?? 20;
     const colorsStr = properties.colors ?? '["#2a2a2a"]';
-    const paintMode = properties.paintMode ?? "multiply";
     const density = properties.density ?? 0.5;
     const smear = properties.smear ?? false;
     const grain = properties.grain ?? 0.5;
@@ -4235,14 +3778,17 @@ var charcoalLayerType = {
     const field = parseField(fieldStr, cols, rows);
     const rand = mulberry32(seed);
     const grainNoise = createFractalNoise(seed + 500, 3);
-    let colorList;
+    let darkColor = "#2a2a2a";
     try {
       const parsed = JSON.parse(colorsStr);
-      colorList = parsed.map(hexToRgb2);
+      if (parsed.length > 0) darkColor = parsed[0];
     } catch {
-      colorList = [];
     }
-    if (colorList.length === 0) colorList = [[42, 42, 42]];
+    const clean = darkColor.replace("#", "");
+    const cn = parseInt(clean, 16);
+    const cr = cn >> 16 & 255;
+    const cg = cn >> 8 & 255;
+    const cb = cn & 255;
     const imageData = ctx.getImageData(bounds.x, bounds.y, w, h);
     const data = imageData.data;
     const strokeLen = smear ? 8 : 4;
@@ -4256,14 +3802,6 @@ var charcoalLayerType = {
         const g = grainNoise(px / 12, py / 12);
         const coverage = density * sample.magnitude * vMask * lerp2(0.3, 1, g);
         if (rand() > coverage) continue;
-        const dirT = clamp2((sample.dx + 1) * 0.5, 0, 1) * (colorList.length - 1);
-        const ci = Math.floor(dirT);
-        const tf = dirT - ci;
-        const ca = colorList[Math.min(ci, colorList.length - 1)];
-        const cb_ = colorList[Math.min(ci + 1, colorList.length - 1)];
-        const cr = lerp2(ca[0], cb_[0], tf);
-        const cg_ = lerp2(ca[1], cb_[1], tf);
-        const cb2 = lerp2(ca[2], cb_[2], tf);
         const len = strokeLen * (0.5 + rand() * 0.5);
         const angle = Math.atan2(sample.dy, sample.dx);
         const alpha = layerOpacity * vMask * lerp2(0.15, 0.55, rand()) * sample.magnitude;
@@ -4278,46 +3816,25 @@ var charcoalLayerType = {
           const dr = data[i];
           const dg = data[i + 1];
           const db = data[i + 2];
-          if (paintMode === "screen") {
-            data[i] = Math.round(lerp2(dr, 255 - (255 - dr) * (255 - cr) / 255, a));
-            data[i + 1] = Math.round(lerp2(dg, 255 - (255 - dg) * (255 - cg_) / 255, a));
-            data[i + 2] = Math.round(lerp2(db, 255 - (255 - db) * (255 - cb2) / 255, a));
-          } else if (paintMode === "normal") {
-            data[i] = Math.round(lerp2(dr, cr, a));
-            data[i + 1] = Math.round(lerp2(dg, cg_, a));
-            data[i + 2] = Math.round(lerp2(db, cb2, a));
-          } else {
-            data[i] = Math.round(lerp2(dr, dr * cr / 255, a));
-            data[i + 1] = Math.round(lerp2(dg, dg * cg_ / 255, a));
-            data[i + 2] = Math.round(lerp2(db, db * cb2 / 255, a));
-          }
+          data[i] = Math.round(lerp2(dr, dr * cr / 255, a));
+          data[i + 1] = Math.round(lerp2(dg, dg * cg / 255, a));
+          data[i + 2] = Math.round(lerp2(db, db * cb / 255, a));
         }
       }
     }
     if (grain > 0) {
-      const gc = colorList[0];
       for (let py = 0; py < h; py++) {
         for (let px = 0; px < w; px++) {
-          const g2 = grainNoise(px / 3.5, py / 3.5);
-          if (g2 > 0.6 && rand() < grain * 0.08) {
+          const g = grainNoise(px / 3.5, py / 3.5);
+          if (g > 0.6 && rand() < grain * 0.08) {
             const i = (py * w + px) * 4;
             const dr = data[i];
             const dg = data[i + 1];
             const db = data[i + 2];
             const a = layerOpacity * 0.12;
-            if (paintMode === "screen") {
-              data[i] = Math.round(lerp2(dr, 255 - (255 - dr) * (255 - gc[0]) / 255, a));
-              data[i + 1] = Math.round(lerp2(dg, 255 - (255 - dg) * (255 - gc[1]) / 255, a));
-              data[i + 2] = Math.round(lerp2(db, 255 - (255 - db) * (255 - gc[2]) / 255, a));
-            } else if (paintMode === "normal") {
-              data[i] = Math.round(lerp2(dr, gc[0], a));
-              data[i + 1] = Math.round(lerp2(dg, gc[1], a));
-              data[i + 2] = Math.round(lerp2(db, gc[2], a));
-            } else {
-              data[i] = Math.round(lerp2(dr, dr * gc[0] / 255, a));
-              data[i + 1] = Math.round(lerp2(dg, dg * gc[1] / 255, a));
-              data[i + 2] = Math.round(lerp2(db, db * gc[2] / 255, a));
-            }
+            data[i] = Math.round(lerp2(dr, dr * cr / 255, a));
+            data[i + 1] = Math.round(lerp2(dg, dg * cg / 255, a));
+            data[i + 2] = Math.round(lerp2(db, db * cb / 255, a));
           }
         }
       }
@@ -4333,14 +3850,6 @@ var charcoalLayerType = {
 };
 function lerp2(a, b, t) {
   return a + (b - a) * t;
-}
-function clamp2(v, lo, hi) {
-  return Math.max(lo, Math.min(hi, v));
-}
-function hexToRgb2(hex) {
-  const clean = hex.replace("#", "");
-  const n = parseInt(clean, 16);
-  return [n >> 16 & 255, n >> 8 & 255, n & 255];
 }
 
 // src/oil-acrylic.ts
@@ -4376,7 +3885,7 @@ var OIL_PROPERTIES = [
     group: "debug"
   }
 ];
-function hexToRgb3(hex) {
+function hexToRgb2(hex) {
   const clean = hex.replace("#", "");
   const n = parseInt(clean, 16);
   return [n >> 16 & 255, n >> 8 & 255, n & 255];
@@ -4384,7 +3893,7 @@ function hexToRgb3(hex) {
 function lerp3(a, b, t) {
   return a + (b - a) * t;
 }
-function clamp3(v, lo, hi) {
+function clamp2(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 var oilAcrylicLayerType = {
@@ -4425,7 +3934,7 @@ var oilAcrylicLayerType = {
     let colorList;
     try {
       const parsed = JSON.parse(colorsStr);
-      colorList = parsed.map(hexToRgb3);
+      colorList = parsed.map(hexToRgb2);
     } catch {
       colorList = [[200, 114, 58]];
     }
@@ -4446,13 +3955,13 @@ var oilAcrylicLayerType = {
           const sn = scumbleNoise(px * sc / 14, py * sc / 14);
           coverage = mag * (sn > (1 - mag) * 0.7 ? 1 : 0.15);
         }
-        const alpha = clamp3(coverage * vMask * layerOpacity, 0, 1);
+        const alpha = clamp2(coverage * vMask * layerOpacity, 0, 1);
         if (alpha < 0.01) continue;
         let color;
         if (colorList.length === 1) {
           color = colorList[0];
         } else {
-          const t = clamp3((sample.dx + 1) * 0.5, 0, 1) * (colorList.length - 1);
+          const t = clamp2((sample.dx + 1) * 0.5, 0, 1) * (colorList.length - 1);
           const ci = Math.floor(t);
           const tf = t - ci;
           const ca = colorList[Math.min(ci, colorList.length - 1)];
@@ -4463,9 +3972,9 @@ var oilAcrylicLayerType = {
         if (impasto) {
           const bn = impastoNoise(px * sc / 6, py * sc / 6);
           const bevelFactor = bn * mag * 0.4;
-          cr = clamp3(cr + bevelFactor * 80, 0, 255);
-          cg = clamp3(cg + bevelFactor * 80, 0, 255);
-          cb = clamp3(cb + bevelFactor * 80, 0, 255);
+          cr = clamp2(cr + bevelFactor * 80, 0, 255);
+          cg = clamp2(cg + bevelFactor * 80, 0, 255);
+          cb = clamp2(cb + bevelFactor * 80, 0, 255);
         }
         const si = (py * w + px) * 4;
         scratch[si] = Math.round(cr);
@@ -4568,7 +4077,7 @@ var GOUACHE_PROPERTIES = [
     group: "debug"
   }
 ];
-function hexToRgb4(hex) {
+function hexToRgb3(hex) {
   const clean = hex.replace("#", "");
   const n = parseInt(clean, 16);
   return [n >> 16 & 255, n >> 8 & 255, n & 255];
@@ -4576,7 +4085,7 @@ function hexToRgb4(hex) {
 function lerp4(a, b, t) {
   return a + (b - a) * t;
 }
-function clamp4(v, lo, hi) {
+function clamp3(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 var gouacheLayerType = {
@@ -4616,7 +4125,7 @@ var gouacheLayerType = {
     let colorList;
     try {
       const parsed = JSON.parse(colorsStr);
-      colorList = parsed.map(hexToRgb4);
+      colorList = parsed.map(hexToRgb3);
     } catch {
       colorList = [[232, 213, 176]];
     }
@@ -4642,13 +4151,13 @@ var gouacheLayerType = {
           const grainMask = 1 - grain * (1 - gn) * 0.4;
           coverage = mag * grainMask;
         }
-        const alpha = clamp4(coverage * vMask * layerOpacity, 0, 1);
+        const alpha = clamp3(coverage * vMask * layerOpacity, 0, 1);
         if (alpha < 0.01) continue;
         let color;
         if (colorList.length === 1) {
           color = colorList[0];
         } else {
-          const t = clamp4((sample.dx + 1) * 0.5, 0, 1) * (colorList.length - 1);
+          const t = clamp3((sample.dx + 1) * 0.5, 0, 1) * (colorList.length - 1);
           const ci = Math.floor(t);
           const tf = t - ci;
           const ca = colorList[Math.min(ci, colorList.length - 1)];
@@ -4664,9 +4173,9 @@ var gouacheLayerType = {
             (py + Math.sin(angle) * grainStep) * sc / 8
           );
           const grainShift = (gShift - 0.5) * grain * 15;
-          cr = clamp4(cr + grainShift, 0, 255);
-          cg = clamp4(cg + grainShift, 0, 255);
-          cbv = clamp4(cbv + grainShift, 0, 255);
+          cr = clamp3(cr + grainShift, 0, 255);
+          cg = clamp3(cg + grainShift, 0, 255);
+          cbv = clamp3(cbv + grainShift, 0, 255);
         }
         const i = (py * w + px) * 4;
         const dr = data[i];
@@ -4739,7 +4248,7 @@ var PASTEL_PROPERTIES = [
     group: "debug"
   }
 ];
-function hexToRgb5(hex) {
+function hexToRgb4(hex) {
   const clean = hex.replace("#", "");
   const n = parseInt(clean, 16);
   return [n >> 16 & 255, n >> 8 & 255, n & 255];
@@ -4747,7 +4256,7 @@ function hexToRgb5(hex) {
 function lerp5(a, b, t) {
   return a + (b - a) * t;
 }
-function clamp5(v, lo, hi) {
+function clamp4(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 var pastelLayerType = {
@@ -4788,7 +4297,7 @@ var pastelLayerType = {
     let colorList;
     try {
       const parsed = JSON.parse(colorsStr);
-      colorList = parsed.map(hexToRgb5);
+      colorList = parsed.map(hexToRgb4);
     } catch {
       colorList = [[212, 160, 200]];
     }
@@ -4814,7 +4323,7 @@ var pastelLayerType = {
         if (colorList.length === 1) {
           color = colorList[0];
         } else {
-          const t = clamp5((sample.dx + 1) * 0.5, 0, 1) * (colorList.length - 1);
+          const t = clamp4((sample.dx + 1) * 0.5, 0, 1) * (colorList.length - 1);
           const ci = Math.floor(t);
           const tf = t - ci;
           const ca = colorList[Math.min(ci, colorList.length - 1)];
@@ -4829,11 +4338,11 @@ var pastelLayerType = {
           if (sx < 0 || sx >= w || sy < 0 || sy >= h) continue;
           const t = Math.abs(s) / halfLen;
           const falloff = softness > 0.5 ? 1 - Math.pow(t, 2 - softness) : 1 - t;
-          const markAlpha = clamp5(falloff * mag * vMask * layerOpacity, 0, 1);
+          const markAlpha = clamp4(falloff * mag * vMask * layerOpacity, 0, 1);
           if (markAlpha < 0.01) continue;
           const si = (sy * w + sx) * 4;
           const existing = scratch[si + 3];
-          const newA = clamp5(existing + markAlpha * (1 - existing * 0.7), 0, 1);
+          const newA = clamp4(existing + markAlpha * (1 - existing * 0.7), 0, 1);
           const blendW = markAlpha / (newA + 1e-6);
           scratch[si] = lerp5(scratch[si], color[0], blendW);
           scratch[si + 1] = lerp5(scratch[si + 1], color[1], blendW);
@@ -5046,17 +4555,14 @@ function generateRoundTip(size, hardness, roundness, angle) {
       const ry = dx * sin + dy * cos;
       const dist = Math.sqrt(rx * rx + ry * invRoundness * (ry * invRoundness));
       const nd = dist / radius;
-      const aaBand = 1.5;
-      const edgeDist = (1 - nd) * radius;
       let alpha;
       if (nd > 1) {
-        const overshoot = -edgeDist;
-        alpha = overshoot < aaBand ? Math.round((1 - overshoot / aaBand) * 255) : 0;
+        alpha = 0;
       } else if (hardness >= 1) {
-        alpha = edgeDist >= aaBand ? 255 : Math.round(edgeDist / aaBand * 255);
+        alpha = 255;
       } else {
         const gaussian = Math.exp(-nd * nd * 4.5);
-        const hard = edgeDist >= aaBand ? 1 : edgeDist / aaBand;
+        const hard = nd <= 1 ? 1 : 0;
         alpha = Math.round(lerp7(gaussian, hard, hardness) * 255);
       }
       const i = (py * s + px) * 4;
@@ -5952,7 +5458,7 @@ function renderWash(stamps, brush, ctx, bounds, maxOpacity) {
   ctx.restore();
 }
 function drawTintedTip(ctx, tip, x, y, color) {
-  const [r, g, b] = hexToRgb6(color);
+  const [r, g, b] = hexToRgb5(color);
   const tmpCanvas = createOffscreenCanvas(tip.width, tip.height, ctx);
   if (!tmpCanvas) return;
   const tmpCtx = tmpCanvas.getContext("2d");
@@ -5969,7 +5475,7 @@ function drawTintedTip(ctx, tip, x, y, color) {
   tmpCtx.putImageData(tinted, 0, 0);
   ctx.drawImage(tmpCanvas, x, y);
 }
-function hexToRgb6(hex) {
+function hexToRgb5(hex) {
   const clean = hex.replace("#", "");
   const n = parseInt(clean, 16);
   return [n >> 16 & 255, n >> 8 & 255, n & 255];
@@ -6002,102 +5508,6 @@ function createOffscreenCanvas(width, height, referenceCtx) {
   return null;
 }
 
-// src/path-source.ts
-function parsePathSource(pathSource) {
-  if (!pathSource) return [];
-  if (pathSource.startsWith("algorithm:")) {
-    const channelName = pathSource.slice("algorithm:".length);
-    const algData = typeof globalThis !== "undefined" ? globalThis.__genart_data : void 0;
-    if (algData && Array.isArray(algData[channelName])) {
-      return algData[channelName];
-    }
-    return [];
-  }
-  return [];
-}
-function convertPathsToStrokes(paths, options) {
-  const { brushId, color, opacity, size, seed, groupFilter } = options;
-  const strokes = [];
-  for (const path of paths) {
-    if (path.points.length < 2) continue;
-    if (groupFilter !== void 0 && path.group !== groupFilter) continue;
-    const points = path.points.map((pt, i) => ({
-      x: pt.x,
-      y: pt.y,
-      pressure: path.pressure?.[i] ?? 1
-    }));
-    strokes.push({
-      brushId,
-      color,
-      opacity,
-      size: path.width ?? size,
-      points,
-      seed
-    });
-  }
-  return strokes;
-}
-
-// src/depth-mapping.ts
-function lerp8(a, b, t) {
-  return a + (b - a) * t;
-}
-function depthFraction(depth, maxDepth) {
-  if (maxDepth <= 0) return 0;
-  return Math.min(1, Math.max(0, depth / maxDepth));
-}
-function interpolateRange(range, t, fallback) {
-  if (!range) return fallback;
-  return lerp8(range[0], range[1], t);
-}
-function applyDepthMapping(paths, mapping, brushId, color, baseSeed) {
-  const strokes = [];
-  for (const path of paths) {
-    if (path.points.length < 2) continue;
-    const depth = path.depth ?? 0;
-    const t = depthFraction(depth, mapping.maxDepth);
-    const width = interpolateRange(mapping.width, t, path.width ?? 1);
-    const pressure = interpolateRange(mapping.pressure, t, 1);
-    const paintLoad = interpolateRange(mapping.paintLoad, t, 1);
-    const opacity = interpolateRange(mapping.opacity, t, 1);
-    const effectiveOpacity = opacity * paintLoad;
-    const points = path.points.map((pt, i) => {
-      const pointPressure = (path.pressure?.[i] ?? 1) * pressure;
-      return { x: pt.x, y: pt.y, pressure: pointPressure };
-    });
-    strokes.push({
-      brushId,
-      color,
-      opacity: effectiveOpacity,
-      size: width,
-      points,
-      seed: baseSeed
-    });
-  }
-  return strokes;
-}
-function parseDepthMapping(json) {
-  if (!json) return null;
-  try {
-    const obj = JSON.parse(json);
-    if (typeof obj !== "object" || obj === null) return null;
-    if (typeof obj.maxDepth !== "number" || obj.maxDepth < 0) return null;
-    const mapping = { maxDepth: obj.maxDepth };
-    const result = { maxDepth: obj.maxDepth };
-    for (const key of ["width", "pressure", "paintLoad", "opacity"]) {
-      if (Array.isArray(obj[key]) && obj[key].length === 2) {
-        const [a, b] = obj[key];
-        if (typeof a === "number" && typeof b === "number") {
-          result[key] = [a, b];
-        }
-      }
-    }
-    return result;
-  } catch {
-    return null;
-  }
-}
-
 // src/stroke-layer.ts
 var STROKE_PROPERTIES = [
   // Brushes & strokes (JSON-encoded)
@@ -6113,35 +5523,6 @@ var STROKE_PROPERTIES = [
     label: "Strokes",
     type: "string",
     default: "[]",
-    group: "stroke"
-  },
-  // Algorithm path source (ADR 072)
-  {
-    key: "pathSource",
-    label: "Path Source",
-    type: "string",
-    default: "",
-    group: "stroke"
-  },
-  {
-    key: "pathBrushId",
-    label: "Path Brush",
-    type: "string",
-    default: "flat",
-    group: "stroke"
-  },
-  {
-    key: "pathColor",
-    label: "Path Color",
-    type: "color",
-    default: "#000000",
-    group: "stroke"
-  },
-  {
-    key: "depthMapping",
-    label: "Depth Mapping",
-    type: "string",
-    default: "",
     group: "stroke"
   },
   // Optional vector field (for hybrid flow influence)
@@ -6242,10 +5623,6 @@ var strokeLayerType = {
   render(properties, ctx, bounds, _resources) {
     const brushesStr = properties.brushes ?? "[]";
     const strokesStr = properties.strokes ?? "[]";
-    const pathSourceStr = properties.pathSource ?? "";
-    const pathBrushId = properties.pathBrushId ?? "flat";
-    const pathColor = properties.pathColor ?? "#000000";
-    const depthMappingStr = properties.depthMapping ?? "";
     const fieldStr = properties.field ?? "";
     const cols = properties.fieldCols ?? 20;
     const rows = properties.fieldRows ?? 20;
@@ -6268,27 +5645,10 @@ var strokeLayerType = {
       if (b.id) brushMap[b.id] = b;
     }
     let strokes = [];
-    if (pathSourceStr) {
-      const algorithmPaths = parsePathSource(pathSourceStr);
-      if (algorithmPaths.length > 0) {
-        const depthMap = parseDepthMapping(depthMappingStr);
-        if (depthMap) {
-          strokes = applyDepthMapping(algorithmPaths, depthMap, pathBrushId, pathColor, seed);
-        } else {
-          strokes = convertPathsToStrokes(algorithmPaths, {
-            brushId: pathBrushId,
-            color: pathColor,
-            size: void 0,
-            seed
-          });
-        }
-      }
-    } else {
-      try {
-        strokes = JSON.parse(strokesStr);
-      } catch {
-        strokes = [];
-      }
+    try {
+      strokes = JSON.parse(strokesStr);
+    } catch {
+      strokes = [];
     }
     if (strokes.length === 0) return;
     const allBrushes = [...Object.values(brushMap), ...customBrushes];
@@ -6343,19 +5703,6 @@ var strokeLayerType = {
         }
       } catch {
         errors.push({ property: "brushes", message: "Brushes must be valid JSON" });
-      }
-    }
-    const depthMappingVal = properties.depthMapping;
-    if (typeof depthMappingVal === "string" && depthMappingVal !== "") {
-      try {
-        const parsed = JSON.parse(depthMappingVal);
-        if (typeof parsed !== "object" || parsed === null) {
-          errors.push({ property: "depthMapping", message: "Depth mapping must be a JSON object" });
-        } else if (typeof parsed.maxDepth !== "number") {
-          errors.push({ property: "depthMapping", message: "Depth mapping must have a numeric maxDepth" });
-        }
-      } catch {
-        errors.push({ property: "depthMapping", message: "Depth mapping must be valid JSON" });
       }
     }
     const strokesStr = properties.strokes;
@@ -6579,39 +5926,6 @@ function buildShadingEvaluator(shading, regionX, regionY, regionW, regionH) {
         return lo + (hi - lo) * raw;
       };
     }
-    case "algorithm": {
-      const [lo, hi] = shading.range;
-      const algData = typeof globalThis !== "undefined" ? globalThis.__genart_data : void 0;
-      const channel = algData && algData[shading.channel] instanceof Float32Array ? algData[shading.channel] : void 0;
-      if (!channel) {
-        return () => lo;
-      }
-      const cols = algData.cols ?? 1;
-      const rows = algData.rows ?? 1;
-      return (x, y) => {
-        const nx = regionW > 0 ? (x - regionX) / regionW : 0;
-        const ny = regionH > 0 ? (y - regionY) / regionH : 0;
-        const gx = Math.max(0, Math.min(cols - 1, nx * (cols - 1)));
-        const gy = Math.max(0, Math.min(rows - 1, ny * (rows - 1)));
-        const x0 = Math.min(cols - 2, Math.floor(gx));
-        const y0 = Math.min(rows - 2, Math.floor(gy));
-        const x1 = x0 + 1;
-        const y1 = y0 + 1;
-        const tx = gx - x0;
-        const ty = gy - y0;
-        const isVector = channel.length === cols * rows * 3;
-        const stride = isVector ? 3 : 1;
-        const offset = isVector ? 2 : 0;
-        const v00 = channel[y0 * cols * stride + x0 * stride + offset] ?? 0;
-        const v10 = channel[y0 * cols * stride + x1 * stride + offset] ?? 0;
-        const v01 = channel[y1 * cols * stride + x0 * stride + offset] ?? 0;
-        const v11 = channel[y1 * cols * stride + x1 * stride + offset] ?? 0;
-        const raw = (v00 * (1 - tx) + v10 * tx) * (1 - ty) + (v01 * (1 - tx) + v11 * tx) * ty;
-        return lo + (hi - lo) * Math.max(0, Math.min(1, raw));
-      };
-    }
-    default:
-      return () => 1;
   }
 }
 function applyShadingToPath(shadingValue, affects) {
@@ -6974,7 +6288,7 @@ var FILL_PROPERTIES = [
     group: "fill"
   }
 ];
-var _pathCache = /* @__PURE__ */ new Map();
+var _renderCache = /* @__PURE__ */ new Map();
 function makeCacheKey(properties, bounds) {
   return JSON.stringify([
     properties.brushId,
@@ -6993,50 +6307,9 @@ function makeCacheKey(properties, bounds) {
     properties.opacity
   ]);
 }
-function isSimpleBrush(brush) {
-  if (brush.tipType === "texture") return false;
-  if (brush.scatter > 0.01 || brush.scatterAlongPath > 0.01) return false;
-  if (brush.grainTexture) return false;
-  if (brush.roundness < 0.8) return false;
-  return true;
-}
-function renderNativePaths(paths, brush, color, size, ctx) {
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  for (const gp of paths) {
-    const effectiveSize = size * gp.sizeScale;
-    const effectiveOpacity = gp.opacityScale * brush.opacity * brush.flow;
-    if (gp.points.length === 2) {
-      const p0 = gp.points[0];
-      const p1 = gp.points[1];
-      const dx = p1.x - p0.x;
-      const dy = p1.y - p0.y;
-      if (dx * dx + dy * dy < 1) {
-        ctx.globalAlpha = effectiveOpacity;
-        ctx.beginPath();
-        ctx.arc(p0.x, p0.y, effectiveSize / 2, 0, Math.PI * 2);
-        ctx.fill();
-        continue;
-      }
-    }
-    ctx.globalAlpha = effectiveOpacity;
-    ctx.lineWidth = effectiveSize;
-    ctx.beginPath();
-    const first = gp.points[0];
-    ctx.moveTo(first.x, first.y);
-    for (let i = 1; i < gp.points.length; i++) {
-      const pt = gp.points[i];
-      ctx.lineTo(pt.x, pt.y);
-    }
-    ctx.stroke();
-  }
-}
-var _deprecationWarned = false;
 var fillLayerType = {
   typeId: "painting:fill",
-  displayName: "Fill (deprecated)",
+  displayName: "Fill",
   icon: "bucket",
   category: "draw",
   properties: FILL_PROPERTIES,
@@ -7049,12 +6322,6 @@ var fillLayerType = {
     return props;
   },
   render(properties, ctx, bounds, _resources) {
-    if (!_deprecationWarned) {
-      _deprecationWarned = true;
-      console.warn(
-        "painting:fill is deprecated. Use patterns:fill from @genart-dev/plugin-patterns instead."
-      );
-    }
     const w = Math.ceil(bounds.width);
     const h = Math.ceil(bounds.height);
     if (w <= 0 || h <= 0) return;
@@ -7094,39 +6361,22 @@ var fillLayerType = {
     if (customBrush?.id) {
       brushMap[customBrush.id] = customBrush;
     }
-    const effectiveBrushId = customBrush?.id ?? brushId;
-    const effectiveBrush = brushMap[effectiveBrushId] ?? brushMap["ink-pen"];
-    const useNative = isSimpleBrush(effectiveBrush);
-    if (!useNative) {
-      for (const b of Object.values(brushMap)) {
-        if (b.tipType === "texture" && b.tipTexture) {
-          preloadTextureTip(b.tipTexture);
-        }
+    for (const b of Object.values(brushMap)) {
+      if (b.tipType === "texture" && b.tipTexture) {
+        preloadTextureTip(b.tipTexture);
       }
     }
     const cacheKey2 = makeCacheKey(properties, bounds);
-    let generatedPaths;
-    const cachedPaths = _pathCache.get(cacheKey2);
-    if (cachedPaths) {
-      generatedPaths = cachedPaths.paths;
+    let strokes;
+    const cached = _renderCache.get(cacheKey2);
+    if (cached) {
+      strokes = cached.strokes;
     } else {
-      generatedPaths = generateFillPaths(strategy, region, shading, shadingAffects, bounds, seed);
-      if (_pathCache.size > 50) {
-        const firstKey = _pathCache.keys().next().value;
-        if (firstKey !== void 0) _pathCache.delete(firstKey);
-      }
-      _pathCache.set(cacheKey2, { key: cacheKey2, paths: generatedPaths });
-    }
-    if (generatedPaths.length === 0) return;
-    ctx.save();
-    ctx.globalAlpha = layerOpacity;
-    applyRegionClip(region, bounds, ctx);
-    if (useNative) {
-      renderNativePaths(generatedPaths, effectiveBrush, color, sizeOverride, ctx);
-    } else {
+      const generatedPaths = generateFillPaths(strategy, region, shading, shadingAffects, bounds, seed);
+      const effectiveBrushId = customBrush?.id ?? brushId;
       const ox = bounds.x;
       const oy = bounds.y;
-      const strokes = generatedPaths.map((gp, i) => ({
+      strokes = generatedPaths.map((gp, i) => ({
         brushId: effectiveBrushId,
         color,
         points: gp.points.map((pt) => ({ x: pt.x - ox, y: pt.y - oy })),
@@ -7134,8 +6384,17 @@ var fillLayerType = {
         opacity: gp.opacityScale,
         seed: seed + i
       }));
-      renderStrokes(strokes, brushMap, ctx, bounds, seed);
+      if (_renderCache.size > 50) {
+        const firstKey = _renderCache.keys().next().value;
+        if (firstKey !== void 0) _renderCache.delete(firstKey);
+      }
+      _renderCache.set(cacheKey2, { key: cacheKey2, strokes });
     }
+    if (strokes.length === 0) return;
+    ctx.save();
+    ctx.globalAlpha = layerOpacity;
+    applyRegionClip(region, bounds, ctx);
+    renderStrokes(strokes, brushMap, ctx, bounds, seed);
     ctx.restore();
   },
   validate(properties) {
@@ -7151,455 +6410,6 @@ var fillLayerType = {
       }
     }
     return errors.length > 0 ? errors : null;
-  }
-};
-
-// src/mark-field.ts
-var MARK_FIELD_PROPERTIES = [
-  { key: "field", label: "Vector Field", type: "string", default: "noise:0:0.1:3", group: "field" },
-  { key: "fieldCols", label: "Field Columns", type: "number", default: 30, min: 4, max: 80, step: 1, group: "field" },
-  { key: "fieldRows", label: "Field Rows", type: "number", default: 30, min: 4, max: 80, step: 1, group: "field" },
-  { key: "seed", label: "Seed", type: "number", default: 42, min: 0, max: 99999, step: 1, group: "generation" },
-  { key: "density", label: "Mark Density", type: "number", default: 800, min: 50, max: 5e3, step: 50, group: "generation" },
-  { key: "markLength", label: "Mark Length", type: "number", default: 15, min: 3, max: 60, step: 1, group: "mark" },
-  { key: "markLengthVariation", label: "Length Variation", type: "number", default: 0.3, min: 0, max: 1, step: 0.05, group: "mark" },
-  { key: "markWeight", label: "Mark Weight", type: "number", default: 1.2, min: 0.3, max: 8, step: 0.1, group: "mark" },
-  { key: "markWeightVariation", label: "Weight Variation", type: "number", default: 0.2, min: 0, max: 1, step: 0.05, group: "mark" },
-  { key: "color", label: "Color", type: "color", default: "#2a2a2a", group: "style" },
-  { key: "colorVariation", label: "Color Variation", type: "number", default: 0.1, min: 0, max: 1, step: 0.05, group: "style" },
-  { key: "opacity", label: "Opacity", type: "number", default: 0.7, min: 0, max: 1, step: 0.01, group: "style" },
-  {
-    key: "paintMode",
-    label: "Paint Mode",
-    type: "select",
-    default: "multiply",
-    options: [
-      { value: "multiply", label: "Multiply (darken)" },
-      { value: "normal", label: "Normal (opaque)" },
-      { value: "screen", label: "Screen (lighten)" }
-    ],
-    group: "style"
-  },
-  { key: "depthScale", label: "Depth Scale", type: "boolean", default: false, group: "depth" },
-  { key: "horizonY", label: "Horizon Y", type: "number", default: 0.3, min: 0, max: 1, step: 0.01, group: "depth" },
-  { key: "depthDensityRange", label: "Depth Density Range", type: "string", default: "[1, 2.5]", group: "depth" },
-  { key: "depthWeightRange", label: "Depth Weight Range", type: "string", default: "[0.6, 1.8]", group: "depth" },
-  { key: "maskCenterY", label: "Mask Center Y", type: "number", default: -1, min: -1, max: 1, step: 0.01, group: "mask" },
-  { key: "maskSpread", label: "Mask Spread", type: "number", default: 0.25, min: 0.01, max: 1, step: 0.01, group: "mask" }
-];
-function hexToHsl(hex) {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  if (max === min) return [0, 0, l];
-  const d = max - min;
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-  let h = 0;
-  if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-  else if (max === g) h = ((b - r) / d + 2) / 6;
-  else h = ((r - g) / d + 4) / 6;
-  return [h, s, l];
-}
-function hslToRgba(h, s, l, a) {
-  h = (h % 1 + 1) % 1;
-  s = Math.max(0, Math.min(1, s));
-  l = Math.max(0, Math.min(1, l));
-  let r, g, b;
-  if (s === 0) {
-    r = g = b = l;
-  } else {
-    const hue2rgb = (p2, q2, t) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p2 + (q2 - p2) * 6 * t;
-      if (t < 1 / 2) return q2;
-      if (t < 2 / 3) return p2 + (q2 - p2) * (2 / 3 - t) * 6;
-      return p2;
-    };
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1 / 3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1 / 3);
-  }
-  return \`rgba(\${Math.round(r * 255)},\${Math.round(g * 255)},\${Math.round(b * 255)},\${a})\`;
-}
-var markFieldLayerType = {
-  typeId: "painting:mark-field",
-  displayName: "Mark Field",
-  icon: "mark-field",
-  category: "draw",
-  properties: MARK_FIELD_PROPERTIES,
-  propertyEditorId: "painting:mark-field-editor",
-  createDefault() {
-    const props = {};
-    for (const schema of MARK_FIELD_PROPERTIES) props[schema.key] = schema.default;
-    return props;
-  },
-  render(properties, ctx, bounds, _resources) {
-    const fieldStr = properties.field ?? "noise:0:0.1:3";
-    const cols = properties.fieldCols ?? 30;
-    const rows = properties.fieldRows ?? 30;
-    const seed = properties.seed ?? 42;
-    const density = properties.density ?? 800;
-    const markLength = properties.markLength ?? 15;
-    const markLengthVar = properties.markLengthVariation ?? 0.3;
-    const markWeight = properties.markWeight ?? 1.2;
-    const markWeightVar = properties.markWeightVariation ?? 0.2;
-    const color = properties.color ?? "#2a2a2a";
-    const colorVariation = properties.colorVariation ?? 0.1;
-    const opacity = properties.opacity ?? 0.7;
-    const paintMode = properties.paintMode ?? "multiply";
-    const depthScale = properties.depthScale ?? false;
-    const horizonY = properties.horizonY ?? 0.3;
-    const depthDensityStr = properties.depthDensityRange ?? "[1, 2.5]";
-    const depthWeightStr = properties.depthWeightRange ?? "[0.6, 1.8]";
-    const maskCenterY = properties.maskCenterY ?? -1;
-    const maskSpread = properties.maskSpread ?? 0.25;
-    const w = Math.ceil(bounds.width);
-    const h = Math.ceil(bounds.height);
-    if (w <= 0 || h <= 0) return;
-    const field = parseField(fieldStr, cols, rows);
-    const rand = mulberry32(seed);
-    let depthDensityRange = [1, 2.5];
-    let depthWeightRange = [0.6, 1.8];
-    try {
-      depthDensityRange = JSON.parse(depthDensityStr);
-    } catch {
-    }
-    try {
-      depthWeightRange = JSON.parse(depthWeightStr);
-    } catch {
-    }
-    const [baseH, baseS, baseL] = hexToHsl(color);
-    ctx.save();
-    ctx.lineCap = "round";
-    if (paintMode === "screen") {
-      ctx.globalCompositeOperation = "screen";
-    } else if (paintMode === "normal") {
-      ctx.globalCompositeOperation = "source-over";
-    } else {
-      ctx.globalCompositeOperation = "multiply";
-    }
-    for (let i = 0; i < density; i++) {
-      const px = rand() * w;
-      const py = rand() * h;
-      const nx = px / w;
-      const ny = py / h;
-      const sample = sampleField(field, nx, ny);
-      if (sample.magnitude < 0.1) continue;
-      const lenJitter = 1 + markLengthVar * (rand() - 0.5) * 2;
-      const len = markLength * lenJitter * sample.magnitude;
-      const weightJitter = 1 + markWeightVar * (rand() - 0.5) * 2;
-      let mw = markWeight * weightJitter;
-      let densityMult = 1;
-      if (depthScale) {
-        const depthT = Math.max(0, Math.min(1, (ny - horizonY) / (1 - horizonY)));
-        densityMult = depthDensityRange[0] + (depthDensityRange[1] - depthDensityRange[0]) * depthT;
-        const weightMult = depthWeightRange[0] + (depthWeightRange[1] - depthWeightRange[0]) * depthT;
-        mw *= weightMult;
-      }
-      if (depthScale && rand() > densityMult / depthDensityRange[1]) continue;
-      let maskAlpha = 1;
-      if (maskCenterY >= 0) {
-        maskAlpha = Math.exp(-((ny - maskCenterY) ** 2) / (2 * maskSpread * maskSpread));
-        if (maskAlpha < 0.05) continue;
-      }
-      const jH = baseH + colorVariation * (rand() - 0.5) * 0.2;
-      const jS = baseS + colorVariation * (rand() - 0.5) * 0.3;
-      const jL = baseL + colorVariation * (rand() - 0.5) * 0.2;
-      const markAlpha = opacity * maskAlpha;
-      const cx = bounds.x + px;
-      const cy = bounds.y + py;
-      const halfLen = len / 2;
-      ctx.beginPath();
-      ctx.moveTo(cx - sample.dx * halfLen, cy - sample.dy * halfLen);
-      ctx.lineTo(cx + sample.dx * halfLen, cy + sample.dy * halfLen);
-      ctx.strokeStyle = hslToRgba(jH, jS, jL, markAlpha);
-      ctx.lineWidth = Math.max(0.3, mw);
-      ctx.stroke();
-    }
-    ctx.restore();
-  },
-  validate(_properties) {
-    return null;
-  }
-};
-
-// src/flow-lines.ts
-var FLOW_LINES_PROPERTIES = [
-  { key: "field", label: "Vector Field", type: "string", default: "noise:0:0.08:4", group: "field" },
-  { key: "fieldCols", label: "Field Columns", type: "number", default: 40, min: 4, max: 80, step: 1, group: "field" },
-  { key: "fieldRows", label: "Field Rows", type: "number", default: 40, min: 4, max: 80, step: 1, group: "field" },
-  { key: "minMagnitude", label: "Min Magnitude", type: "number", default: 0.1, min: 0, max: 0.5, step: 0.05, group: "field" },
-  { key: "seed", label: "Seed", type: "number", default: 42, min: 0, max: 99999, step: 1, group: "generation" },
-  { key: "lineCount", label: "Line Count", type: "number", default: 2e3, min: 100, max: 1e4, step: 100, group: "generation" },
-  {
-    key: "seedDistribution",
-    label: "Seed Distribution",
-    type: "select",
-    default: "grid-jittered",
-    options: [
-      { value: "uniform", label: "Uniform Random" },
-      { value: "grid-jittered", label: "Grid + Jitter" },
-      { value: "poisson", label: "Poisson (blue noise)" }
-    ],
-    group: "generation"
-  },
-  { key: "lineLength", label: "Line Length", type: "number", default: 120, min: 20, max: 500, step: 10, group: "line" },
-  { key: "stepSize", label: "Step Size", type: "number", default: 3, min: 1, max: 10, step: 0.5, group: "line" },
-  { key: "lineWeight", label: "Line Weight", type: "number", default: 0.8, min: 0.2, max: 5, step: 0.1, group: "line" },
-  { key: "lineWeightVariation", label: "Weight Variation", type: "number", default: 0.15, min: 0, max: 1, step: 0.05, group: "line" },
-  {
-    key: "taper",
-    label: "Taper",
-    type: "select",
-    default: "tail",
-    options: [
-      { value: "none", label: "None" },
-      { value: "head", label: "Head" },
-      { value: "tail", label: "Tail" },
-      { value: "both", label: "Both" }
-    ],
-    group: "line"
-  },
-  { key: "color", label: "Color", type: "color", default: "#1a1a1a", group: "style" },
-  { key: "colorVariation", label: "Color Variation", type: "number", default: 0.05, min: 0, max: 1, step: 0.01, group: "style" },
-  { key: "opacity", label: "Opacity", type: "number", default: 0.6, min: 0, max: 1, step: 0.01, group: "style" },
-  {
-    key: "paintMode",
-    label: "Paint Mode",
-    type: "select",
-    default: "multiply",
-    options: [
-      { value: "multiply", label: "Multiply (darken)" },
-      { value: "normal", label: "Normal (opaque)" },
-      { value: "screen", label: "Screen (lighten)" }
-    ],
-    group: "style"
-  },
-  { key: "depthScale", label: "Depth Scale", type: "boolean", default: true, group: "depth" },
-  { key: "horizonY", label: "Horizon Y", type: "number", default: 0.3, min: 0, max: 1, step: 0.01, group: "depth" },
-  { key: "depthWeightRange", label: "Depth Weight Range", type: "string", default: "[0.3, 1.8]", group: "depth" },
-  { key: "depthOpacityRange", label: "Depth Opacity Range", type: "string", default: "[0.3, 1.0]", group: "depth" },
-  { key: "maskCenterY", label: "Mask Center Y", type: "number", default: -1, min: -1, max: 1, step: 0.01, group: "mask" },
-  { key: "maskSpread", label: "Mask Spread", type: "number", default: 0.25, min: 0.01, max: 1, step: 0.01, group: "mask" }
-];
-function hexToHsl2(hex) {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  if (max === min) return [0, 0, l];
-  const d = max - min;
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-  let h = 0;
-  if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-  else if (max === g) h = ((b - r) / d + 2) / 6;
-  else h = ((r - g) / d + 4) / 6;
-  return [h, s, l];
-}
-function hslToRgba2(h, s, l, a) {
-  h = (h % 1 + 1) % 1;
-  s = Math.max(0, Math.min(1, s));
-  l = Math.max(0, Math.min(1, l));
-  let r, g, b;
-  if (s === 0) {
-    r = g = b = l;
-  } else {
-    const hue2rgb = (p2, q2, t) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p2 + (q2 - p2) * 6 * t;
-      if (t < 1 / 2) return q2;
-      if (t < 2 / 3) return p2 + (q2 - p2) * (2 / 3 - t) * 6;
-      return p2;
-    };
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1 / 3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1 / 3);
-  }
-  return \`rgba(\${Math.round(r * 255)},\${Math.round(g * 255)},\${Math.round(b * 255)},\${a})\`;
-}
-function generateSeedPoints(distribution, count, w, h, rand) {
-  const points = [];
-  if (distribution === "grid-jittered") {
-    const aspect = w / h;
-    const gridRows = Math.max(1, Math.round(Math.sqrt(count / aspect)));
-    const gridCols = Math.max(1, Math.round(count / gridRows));
-    const cellW = w / gridCols;
-    const cellH = h / gridRows;
-    for (let gy = 0; gy < gridRows; gy++) {
-      for (let gx = 0; gx < gridCols; gx++) {
-        const px = (gx + 0.5) * cellW + (rand() - 0.5) * cellW;
-        const py = (gy + 0.5) * cellH + (rand() - 0.5) * cellH;
-        points.push([px, py]);
-      }
-    }
-  } else if (distribution === "poisson") {
-    const radius = Math.sqrt(w * h / (count * Math.PI));
-    const cellSize = radius / Math.SQRT2;
-    const gridW = Math.ceil(w / cellSize);
-    const gridH = Math.ceil(h / cellSize);
-    const occupied = /* @__PURE__ */ new Set();
-    let attempts = 0;
-    const maxAttempts = count * 30;
-    while (points.length < count && attempts < maxAttempts) {
-      attempts++;
-      const px = rand() * w;
-      const py = rand() * h;
-      const gi = Math.floor(px / cellSize);
-      const gj = Math.floor(py / cellSize);
-      const key = gj * gridW + gi;
-      let tooClose = false;
-      for (let dy = -1; dy <= 1 && !tooClose; dy++) {
-        for (let dx = -1; dx <= 1 && !tooClose; dx++) {
-          const ni = gi + dx;
-          const nj = gj + dy;
-          if (ni >= 0 && ni < gridW && nj >= 0 && nj < gridH) {
-            if (occupied.has(nj * gridW + ni)) tooClose = true;
-          }
-        }
-      }
-      if (!tooClose) {
-        occupied.add(key);
-        points.push([px, py]);
-      }
-    }
-  } else {
-    for (let i = 0; i < count; i++) {
-      points.push([rand() * w, rand() * h]);
-    }
-  }
-  return points;
-}
-var flowLinesLayerType = {
-  typeId: "painting:flow-lines",
-  displayName: "Flow Lines",
-  icon: "flow-lines",
-  category: "draw",
-  properties: FLOW_LINES_PROPERTIES,
-  propertyEditorId: "painting:flow-lines-editor",
-  createDefault() {
-    const props = {};
-    for (const schema of FLOW_LINES_PROPERTIES) props[schema.key] = schema.default;
-    return props;
-  },
-  render(properties, ctx, bounds, _resources) {
-    const fieldStr = properties.field ?? "noise:0:0.08:4";
-    const cols = properties.fieldCols ?? 40;
-    const rows = properties.fieldRows ?? 40;
-    const minMagnitude = properties.minMagnitude ?? 0.1;
-    const seed = properties.seed ?? 42;
-    const lineCount = properties.lineCount ?? 2e3;
-    const seedDistribution = properties.seedDistribution ?? "grid-jittered";
-    const lineLength = properties.lineLength ?? 120;
-    const stepSize = properties.stepSize ?? 3;
-    const lineWeight = properties.lineWeight ?? 0.8;
-    const lineWeightVar = properties.lineWeightVariation ?? 0.15;
-    const taper = properties.taper ?? "tail";
-    const color = properties.color ?? "#1a1a1a";
-    const colorVariation = properties.colorVariation ?? 0.05;
-    const opacity = properties.opacity ?? 0.6;
-    const paintMode = properties.paintMode ?? "multiply";
-    const depthScale = properties.depthScale ?? true;
-    const horizonY = properties.horizonY ?? 0.3;
-    const depthWeightStr = properties.depthWeightRange ?? "[0.3, 1.8]";
-    const depthOpacityStr = properties.depthOpacityRange ?? "[0.3, 1.0]";
-    const maskCenterY = properties.maskCenterY ?? -1;
-    const maskSpread = properties.maskSpread ?? 0.25;
-    const w = Math.ceil(bounds.width);
-    const h = Math.ceil(bounds.height);
-    if (w <= 0 || h <= 0) return;
-    const field = parseField(fieldStr, cols, rows);
-    const rand = mulberry32(seed);
-    let depthWeightRange = [0.3, 1.8];
-    let depthOpacityRange = [0.3, 1];
-    try {
-      depthWeightRange = JSON.parse(depthWeightStr);
-    } catch {
-    }
-    try {
-      depthOpacityRange = JSON.parse(depthOpacityStr);
-    } catch {
-    }
-    const [baseH, baseS, baseL] = hexToHsl2(color);
-    const seedPoints = generateSeedPoints(seedDistribution, lineCount, w, h, rand);
-    ctx.save();
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    if (paintMode === "screen") {
-      ctx.globalCompositeOperation = "screen";
-    } else if (paintMode === "normal") {
-      ctx.globalCompositeOperation = "source-over";
-    } else {
-      ctx.globalCompositeOperation = "multiply";
-    }
-    for (const [spx, spy] of seedPoints) {
-      const points = [];
-      let cx = spx;
-      let cy = spy;
-      for (let s = 0; s < lineLength; s++) {
-        const nx = cx / w;
-        const ny = cy / h;
-        if (nx < 0 || nx > 1 || ny < 0 || ny > 1) break;
-        const sample = sampleField(field, nx, ny);
-        if (sample.magnitude < minMagnitude) break;
-        points.push([bounds.x + cx, bounds.y + cy]);
-        cx += sample.dx * stepSize;
-        cy += sample.dy * stepSize;
-      }
-      if (points.length < 3) continue;
-      const weightJitter = 1 + lineWeightVar * (rand() - 0.5) * 2;
-      const baseWeight = lineWeight * weightJitter;
-      const jH = baseH + colorVariation * (rand() - 0.5) * 0.2;
-      const jS = baseS + colorVariation * (rand() - 0.5) * 0.3;
-      const jL = baseL + colorVariation * (rand() - 0.5) * 0.2;
-      for (let p = 1; p < points.length; p++) {
-        const t = p / (points.length - 1);
-        let taperFactor = 1;
-        if (taper === "head" || taper === "both") {
-          taperFactor *= Math.min(1, t * 4);
-        }
-        if (taper === "tail" || taper === "both") {
-          taperFactor *= Math.min(1, (1 - t) * 4);
-        }
-        const midX = (points[p - 1][0] + points[p][0]) / 2;
-        const midY = (points[p - 1][1] + points[p][1]) / 2;
-        const ny = (midY - bounds.y) / h;
-        let segWeight = baseWeight * taperFactor;
-        let segOpacity = opacity;
-        if (depthScale) {
-          const depthT = Math.max(0, Math.min(1, (ny - horizonY) / (1 - horizonY)));
-          const weightMult = depthWeightRange[0] + (depthWeightRange[1] - depthWeightRange[0]) * depthT;
-          const opacityMult = depthOpacityRange[0] + (depthOpacityRange[1] - depthOpacityRange[0]) * depthT;
-          segWeight *= weightMult;
-          segOpacity *= opacityMult;
-        }
-        if (maskCenterY >= 0) {
-          const maskAlpha = Math.exp(-((ny - maskCenterY) ** 2) / (2 * maskSpread * maskSpread));
-          if (maskAlpha < 0.05) continue;
-          segOpacity *= maskAlpha;
-        }
-        ctx.beginPath();
-        ctx.moveTo(points[p - 1][0], points[p - 1][1]);
-        ctx.lineTo(points[p][0], points[p][1]);
-        ctx.strokeStyle = hslToRgba2(jH, jS, jL, segOpacity);
-        ctx.lineWidth = Math.max(0.2, segWeight);
-        ctx.stroke();
-      }
-    }
-    ctx.restore();
-  },
-  validate(_properties) {
-    return null;
   }
 };
 
@@ -7701,7 +6511,7 @@ var paintLayerTool = {
       },
       field: {
         type: "string",
-        description: 'Vector field shorthand or JSON. Shorthands: "noise:seed:scale:octaves", "linear:angleDeg:magnitude", "radial:cx:cy:diverge|converge", "vortex:cx:cy:radius", "algorithm:channelName" (reads from algorithm data bridge). Defaults to "noise:0:0.1:3".'
+        description: 'Vector field shorthand or JSON. Shorthands: "noise:seed:scale:octaves", "linear:angleDeg:magnitude", "radial:cx:cy:diverge|converge", "vortex:cx:cy:radius". Defaults to "noise:0:0.1:3".'
       },
       fieldCols: {
         type: "number",
@@ -7823,12 +6633,10 @@ var paintLayerTool = {
     const fieldStr = input.field ?? "noise:0:0.1:3";
     const cols = Math.round(input.fieldCols ?? 20);
     const rows = Math.round(input.fieldRows ?? 20);
-    if (!fieldStr.startsWith("algorithm:")) {
-      try {
-        parseField(fieldStr, cols, rows);
-      } catch {
-        return errorResult(\`Invalid field specification: "\${fieldStr}"\`);
-      }
+    try {
+      parseField(fieldStr, cols, rows);
+    } catch {
+      return errorResult(\`Invalid field specification: "\${fieldStr}"\`);
     }
     const rawColors = input.colors;
     const defaultColor = medium === "ink" ? "#1a1a1a" : medium === "charcoal" ? "#2a2a2a" : medium === "oil" ? "#c8723a" : medium === "gouache" ? "#e8d5b0" : medium === "pastel" ? "#d4a0c8" : (
@@ -7925,16 +6733,7 @@ var getPaintFieldTool = {
     const cols = layer.properties.fieldCols ?? 20;
     const rows = layer.properties.fieldRows ?? 20;
     let fieldJson;
-    if (fieldStr.startsWith("algorithm:")) {
-      const channelName = fieldStr.slice("algorithm:".length);
-      fieldJson = JSON.stringify({
-        source: "algorithm",
-        channel: channelName,
-        cols,
-        rows,
-        note: "Data is provided at runtime by the algorithm via window.__genart_data"
-      });
-    } else if (fieldStr.startsWith("{")) {
+    if (fieldStr.startsWith("{")) {
       fieldJson = fieldStr;
     } else {
       const field = parseField(fieldStr, cols, rows);
@@ -7945,7 +6744,7 @@ var getPaintFieldTool = {
 };
 var updatePaintFieldTool = {
   name: "update_paint_field",
-  description: 'Replace the vector field on an existing painting layer. Accepts shorthand strings, VectorField JSON, or "algorithm:channelName" to read from the algorithm data bridge.',
+  description: "Replace the vector field on an existing painting layer. Accepts shorthand strings or VectorField JSON.",
   inputSchema: {
     type: "object",
     required: ["layerId", "field"],
@@ -7969,12 +6768,10 @@ var updatePaintFieldTool = {
     }
     const cols = layer.properties.fieldCols ?? 20;
     const rows = layer.properties.fieldRows ?? 20;
-    if (!fieldStr.startsWith("algorithm:")) {
-      try {
-        parseField(fieldStr, cols, rows);
-      } catch {
-        return errorResult(\`Invalid field specification: "\${fieldStr}"\`);
-      }
+    try {
+      parseField(fieldStr, cols, rows);
+    } catch {
+      return errorResult(\`Invalid field specification: "\${fieldStr}"\`);
     }
     context.layers.updateProperties(layerId, { field: fieldStr });
     context.emitChange("layer-updated");
@@ -8646,198 +7443,6 @@ var listFillPresetsTool = {
     return textResult(JSON.stringify(result, null, 2));
   }
 };
-var addMarkFieldTool = {
-  name: "add_mark_field",
-  description: "Add a mark-field layer \\u2014 fills regions with short directional marks following a vector field. Creates hatching/cross-hatching effects that follow flow direction.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      density: {
-        type: "number",
-        description: "Number of marks (50\\u20135000, default: 800)."
-      },
-      markLength: {
-        type: "number",
-        description: "Mark length in pixels (3\\u201360, default: 15)."
-      },
-      markWeight: {
-        type: "number",
-        description: "Mark stroke weight (0.3\\u20138, default: 1.2)."
-      },
-      color: {
-        type: "string",
-        description: 'Mark color as hex string (default: "#2a2a2a").'
-      },
-      opacity: {
-        type: "number",
-        description: "Layer opacity 0\\u20131 (default: 0.7)."
-      },
-      field: {
-        type: "string",
-        description: 'Vector field shorthand. Shorthands: "noise:seed:scale:octaves", "linear:angleDeg:magnitude", "radial:cx:cy:diverge|converge", "vortex:cx:cy:radius", "algorithm:channelName". Default: "noise:0:0.1:3".'
-      },
-      paintMode: {
-        type: "string",
-        enum: ["multiply", "normal", "screen"],
-        description: "Composite operation (default: multiply)."
-      },
-      depthScale: {
-        type: "boolean",
-        description: "Scale density + weight with vertical position (default: false)."
-      },
-      horizonY: {
-        type: "number",
-        description: "Horizon Y position 0\\u20131 (default: 0.3)."
-      },
-      index: {
-        type: "number",
-        description: "Layer stack position (default: top)."
-      }
-    }
-  },
-  async handler(input, context) {
-    const defaults = markFieldLayerType.createDefault();
-    const properties = { ...defaults };
-    for (const key of [
-      "density",
-      "markLength",
-      "markWeight",
-      "color",
-      "opacity",
-      "field",
-      "paintMode",
-      "depthScale",
-      "horizonY"
-    ]) {
-      if (input[key] !== void 0) properties[key] = input[key];
-    }
-    const fieldStr = properties.field;
-    if (!fieldStr.startsWith("algorithm:")) {
-      try {
-        parseField(fieldStr, properties.fieldCols, properties.fieldRows);
-      } catch {
-        return errorResult(\`Invalid field specification: "\${fieldStr}"\`);
-      }
-    }
-    const layer = {
-      id: generateLayerId(),
-      type: "painting:mark-field",
-      name: "Mark Field",
-      visible: true,
-      locked: false,
-      opacity: typeof input.opacity === "number" ? input.opacity : 0.7,
-      blendMode: "multiply",
-      transform: fullCanvasTransform(context),
-      properties
-    };
-    const idx = typeof input.index === "number" ? input.index : void 0;
-    context.layers.add(layer, idx);
-    context.emitChange("layer-added");
-    return textResult(\`Added Mark Field layer '\${layer.id}' with \${properties.density} marks.\`);
-  }
-};
-var addFlowLinesTool = {
-  name: "add_flow_lines",
-  description: "Add a flow-lines layer \\u2014 thousands of streamlines traced through a vector field. Creates engraving, topographic, and Schwere See-style effects.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      lineCount: {
-        type: "number",
-        description: "Number of flow lines (100\\u201310000, default: 2000)."
-      },
-      lineLength: {
-        type: "number",
-        description: "Max steps per line (20\\u2013500, default: 120)."
-      },
-      lineWeight: {
-        type: "number",
-        description: "Line stroke weight (0.2\\u20135, default: 0.8)."
-      },
-      color: {
-        type: "string",
-        description: 'Line color as hex string (default: "#1a1a1a").'
-      },
-      opacity: {
-        type: "number",
-        description: "Layer opacity 0\\u20131 (default: 0.6)."
-      },
-      field: {
-        type: "string",
-        description: 'Vector field shorthand. Shorthands: "noise:seed:scale:octaves", "linear:angleDeg:magnitude", "radial:cx:cy:diverge|converge", "vortex:cx:cy:radius", "algorithm:channelName". Default: "noise:0:0.08:4".'
-      },
-      seedDistribution: {
-        type: "string",
-        enum: ["uniform", "grid-jittered", "poisson"],
-        description: "Seed point distribution (default: grid-jittered)."
-      },
-      taper: {
-        type: "string",
-        enum: ["none", "head", "tail", "both"],
-        description: "Line taper mode (default: tail)."
-      },
-      paintMode: {
-        type: "string",
-        enum: ["multiply", "normal", "screen"],
-        description: "Composite operation (default: multiply)."
-      },
-      depthScale: {
-        type: "boolean",
-        description: "Scale weight + opacity with vertical position (default: true)."
-      },
-      horizonY: {
-        type: "number",
-        description: "Horizon Y position 0\\u20131 (default: 0.3)."
-      },
-      index: {
-        type: "number",
-        description: "Layer stack position (default: top)."
-      }
-    }
-  },
-  async handler(input, context) {
-    const defaults = flowLinesLayerType.createDefault();
-    const properties = { ...defaults };
-    for (const key of [
-      "lineCount",
-      "lineLength",
-      "lineWeight",
-      "color",
-      "opacity",
-      "field",
-      "seedDistribution",
-      "taper",
-      "paintMode",
-      "depthScale",
-      "horizonY"
-    ]) {
-      if (input[key] !== void 0) properties[key] = input[key];
-    }
-    const fieldStr = properties.field;
-    if (!fieldStr.startsWith("algorithm:")) {
-      try {
-        parseField(fieldStr, properties.fieldCols, properties.fieldRows);
-      } catch {
-        return errorResult(\`Invalid field specification: "\${fieldStr}"\`);
-      }
-    }
-    const layer = {
-      id: generateLayerId(),
-      type: "painting:flow-lines",
-      name: "Flow Lines",
-      visible: true,
-      locked: false,
-      opacity: typeof input.opacity === "number" ? input.opacity : 0.6,
-      blendMode: "multiply",
-      transform: fullCanvasTransform(context),
-      properties
-    };
-    const idx = typeof input.index === "number" ? input.index : void 0;
-    context.layers.add(layer, idx);
-    context.emitChange("layer-added");
-    return textResult(\`Added Flow Lines layer '\${layer.id}' with \${properties.lineCount} lines.\`);
-  }
-};
 var paintingMcpTools = [
   paintLayerTool,
   getPaintFieldTool,
@@ -8849,9 +7454,7 @@ var paintingMcpTools = [
   eraseStrokesTool,
   fillRegionTool,
   updateFillTool,
-  listFillPresetsTool,
-  addMarkFieldTool,
-  addFlowLinesTool
+  listFillPresetsTool
 ];
 
 // src/index.ts
@@ -8860,7 +7463,7 @@ var paintingPlugin = {
   name: "Painting",
   version: "0.1.0",
   tier: "pro",
-  description: "Vector-field-driven painting layer types: watercolor, oil, gouache, ink, pastel, charcoal, brush stroke, fill, mark field, flow lines.",
+  description: "Vector-field-driven painting layer types: watercolor, oil, gouache, ink, pastel, charcoal, brush stroke, fill.",
   layerTypes: [
     watercolorLayerType,
     inkLayerType,
@@ -8869,9 +7472,7 @@ var paintingPlugin = {
     gouacheLayerType,
     pastelLayerType,
     strokeLayerType,
-    fillLayerType,
-    markFieldLayerType,
-    flowLinesLayerType
+    fillLayerType
   ],
   tools: [],
   exportHandlers: [],
@@ -8886,16 +7487,12 @@ var index_default = paintingPlugin;
 0 && (module.exports = {
   BRUSH_PRESETS,
   FILL_PRESETS,
-  applyDepthMapping,
   applyVerticalMask,
   charcoalLayerType,
   clearTipCache,
-  convertAlgorithmData,
-  convertPathsToStrokes,
   curlAt,
   divergenceAt,
   fillLayerType,
-  flowLinesLayerType,
   generateRoundTip,
   generateTextureTip,
   getBrushPreset,
@@ -8904,13 +7501,10 @@ var index_default = paintingPlugin;
   inkLayerType,
   isTextureTipCached,
   linearField,
-  markFieldLayerType,
   noiseField,
   oilAcrylicLayerType,
   paintingMcpTools,
-  parseDepthMapping,
   parseField,
-  parsePathSource,
   pastelLayerType,
   preloadTextureTip,
   radialField,
@@ -8971,18 +7565,6 @@ var index_default = paintingPlugin;
         lt.render(properties, ctx, bounds, {});
       };
     })(lt_painting_fill);
-    var lt_painting_mark_field = __plugin.layerTypes.find(function(t) { return t.typeId === "painting:mark-field"; });
-    if (lt_painting_mark_field) __R["painting:mark-field"] = (function(lt) {
-      return function(ctx, properties, bounds) {
-        lt.render(properties, ctx, bounds, {});
-      };
-    })(lt_painting_mark_field);
-    var lt_painting_flow_lines = __plugin.layerTypes.find(function(t) { return t.typeId === "painting:flow-lines"; });
-    if (lt_painting_flow_lines) __R["painting:flow-lines"] = (function(lt) {
-      return function(ctx, properties, bounds) {
-        lt.render(properties, ctx, bounds, {});
-      };
-    })(lt_painting_flow_lines);
     }
   })(RENDERERS);
 
@@ -12562,6 +11144,939 @@ var index_default = constructionPlugin;
         lt.render(properties, ctx, bounds, {});
       };
     })(lt_construction_intersection);
+    }
+  })(RENDERERS);
+
+  // --- plugin-distribution ---
+  (function(__R) {
+    var module = { exports: {} };
+    var exports = module.exports;
+    var require = function(id) {
+      // Stub: external deps are only used by MCP tools / Node utilities, not render()
+      return {};
+    };
+    var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// src/index.ts
+var index_exports = {};
+__export(index_exports, {
+  default: () => index_default,
+  densityLayerType: () => densityLayerType,
+  distributionMcpTools: () => distributionMcpTools,
+  distributionPlugin: () => distributionPlugin,
+  previewLayerType: () => previewLayerType,
+  voronoiLayerType: () => voronoiLayerType
+});
+module.exports = __toCommonJS(index_exports);
+
+// src/preview-layer.ts
+var PREVIEW_PROPERTIES = [
+  { key: "algorithm", label: "Algorithm", type: "string", default: "poisson-disk", group: "distribution" },
+  { key: "params", label: "Parameters (JSON)", type: "string", default: "{}", group: "distribution" },
+  { key: "dotSize", label: "Dot Size", type: "number", default: 3, min: 0.5, max: 20, step: 0.5, group: "style" },
+  { key: "dotColor", label: "Dot Color", type: "color", default: "#0088ff", group: "style" },
+  { key: "opacity", label: "Opacity", type: "number", default: 0.6, min: 0, max: 1, step: 0.01, group: "style" },
+  { key: "_points", label: "Points (JSON)", type: "string", default: "[]", group: "data" }
+];
+var previewLayerType = {
+  typeId: "distribution:preview",
+  displayName: "Distribution Preview",
+  icon: "scatter_plot",
+  category: "guide",
+  properties: PREVIEW_PROPERTIES,
+  propertyEditorId: "distribution:preview-editor",
+  createDefault() {
+    return {
+      algorithm: "poisson-disk",
+      params: "{}",
+      dotSize: 3,
+      dotColor: "#0088ff",
+      opacity: 0.6,
+      _points: "[]"
+    };
+  },
+  render(properties, ctx, bounds, _resources) {
+    const points = JSON.parse(String(properties._points || "[]"));
+    if (points.length === 0) return;
+    const dotSize = Number(properties.dotSize ?? 3);
+    const dotColor = String(properties.dotColor ?? "#0088ff");
+    const opacity = Number(properties.opacity ?? 0.6);
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = dotColor;
+    const scaleX = bounds.width;
+    const scaleY = bounds.height;
+    for (const pt of points) {
+      const x = bounds.x + pt.x * scaleX;
+      const y = bounds.y + pt.y * scaleY;
+      ctx.beginPath();
+      ctx.arc(x, y, dotSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  },
+  validate() {
+    return null;
+  }
+};
+
+// src/voronoi-layer.ts
+var VORONOI_PROPERTIES = [
+  { key: "strokeColor", label: "Edge Color", type: "color", default: "#333333", group: "style" },
+  { key: "strokeWidth", label: "Edge Width", type: "number", default: 1, min: 0.5, max: 5, step: 0.5, group: "style" },
+  { key: "fillColor", label: "Fill Color", type: "color", default: "transparent", group: "style" },
+  { key: "opacity", label: "Opacity", type: "number", default: 0.7, min: 0, max: 1, step: 0.01, group: "style" },
+  { key: "_cells", label: "Cells (JSON)", type: "string", default: "[]", group: "data" }
+];
+var voronoiLayerType = {
+  typeId: "distribution:voronoi",
+  displayName: "Voronoi Overlay",
+  icon: "hexagon",
+  category: "guide",
+  properties: VORONOI_PROPERTIES,
+  propertyEditorId: "distribution:voronoi-editor",
+  createDefault() {
+    return {
+      strokeColor: "#333333",
+      strokeWidth: 1,
+      fillColor: "transparent",
+      opacity: 0.7,
+      _cells: "[]"
+    };
+  },
+  render(properties, ctx, bounds, _resources) {
+    const cells = JSON.parse(String(properties._cells || "[]"));
+    if (cells.length === 0) return;
+    const strokeColor = String(properties.strokeColor ?? "#333333");
+    const strokeWidth = Number(properties.strokeWidth ?? 1);
+    const fillColor = String(properties.fillColor ?? "transparent");
+    const opacity = Number(properties.opacity ?? 0.7);
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = strokeWidth;
+    for (const cell of cells) {
+      const verts = cell.vertices;
+      if (verts.length < 3) continue;
+      ctx.beginPath();
+      ctx.moveTo(bounds.x + verts[0].x, bounds.y + verts[0].y);
+      for (let i = 1; i < verts.length; i++) {
+        ctx.lineTo(bounds.x + verts[i].x, bounds.y + verts[i].y);
+      }
+      ctx.closePath();
+      if (fillColor !== "transparent") {
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  },
+  validate() {
+    return null;
+  }
+};
+
+// src/density-layer.ts
+var DENSITY_PROPERTIES = [
+  { key: "radius", label: "Kernel Radius", type: "number", default: 30, min: 5, max: 100, step: 5, group: "density" },
+  { key: "colormap", label: "Color Map", type: "string", default: "viridis", group: "style" },
+  { key: "opacity", label: "Opacity", type: "number", default: 0.65, min: 0, max: 1, step: 0.01, group: "style" },
+  { key: "_points", label: "Points (JSON)", type: "string", default: "[]", group: "data" }
+];
+var COLORMAPS = {
+  viridis: [[68, 1, 84], [59, 82, 139], [33, 144, 141], [93, 201, 99], [253, 231, 37]],
+  plasma: [[13, 8, 135], [156, 23, 158], [237, 121, 83], [240, 249, 33], [252, 230, 25]],
+  inferno: [[0, 0, 4], [120, 28, 109], [238, 125, 51], [252, 225, 31], [252, 255, 164]],
+  hot: [[0, 0, 0], [160, 0, 0], [255, 80, 0], [255, 200, 0], [255, 255, 255]],
+  cool: [[0, 255, 255], [64, 191, 255], [128, 128, 255], [191, 64, 255], [255, 0, 255]]
+};
+function colormapLookup(name, t) {
+  const stops = COLORMAPS[name] ?? COLORMAPS["viridis"];
+  const scaled = t * (stops.length - 1);
+  const lo = Math.floor(scaled), hi = Math.min(lo + 1, stops.length - 1);
+  const f = scaled - lo;
+  const slo = stops[lo];
+  const shi = stops[hi];
+  return [
+    Math.round(slo[0] + f * (shi[0] - slo[0])),
+    Math.round(slo[1] + f * (shi[1] - slo[1])),
+    Math.round(slo[2] + f * (shi[2] - slo[2]))
+  ];
+}
+var densityLayerType = {
+  typeId: "distribution:density",
+  displayName: "Density Map",
+  icon: "gradient",
+  category: "guide",
+  properties: DENSITY_PROPERTIES,
+  propertyEditorId: "distribution:density-editor",
+  createDefault() {
+    return { radius: 30, colormap: "viridis", opacity: 0.65, _points: "[]" };
+  },
+  render(properties, ctx, bounds, _resources) {
+    const points = JSON.parse(String(properties._points || "[]"));
+    if (points.length === 0) return;
+    const radius = Number(properties.radius ?? 30);
+    const colormap = String(properties.colormap ?? "viridis");
+    const opacity = Number(properties.opacity ?? 0.65);
+    const w = Math.floor(bounds.width);
+    const h = Math.floor(bounds.height);
+    if (w <= 0 || h <= 0) return;
+    const scale = 0.25;
+    const gw = Math.max(1, Math.floor(w * scale));
+    const gh = Math.max(1, Math.floor(h * scale));
+    const density = new Float32Array(gw * gh);
+    const gr = radius * scale;
+    const gr2 = gr * gr;
+    for (const pt of points) {
+      const px = pt.x * gw;
+      const py = pt.y * gh;
+      const minX = Math.max(0, Math.floor(px - gr));
+      const maxX = Math.min(gw - 1, Math.ceil(px + gr));
+      const minY = Math.max(0, Math.floor(py - gr));
+      const maxY = Math.min(gh - 1, Math.ceil(py + gr));
+      for (let gy = minY; gy <= maxY; gy++) {
+        for (let gx = minX; gx <= maxX; gx++) {
+          const dx = gx - px, dy = gy - py;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < gr2) {
+            const idx2 = gy * gw + gx;
+            density[idx2] = (density[idx2] ?? 0) + (1 - d2 / gr2);
+          }
+        }
+      }
+    }
+    let maxD = 0;
+    for (let i = 0; i < density.length; i++) if ((density[i] ?? 0) > maxD) maxD = density[i] ?? 0;
+    if (maxD === 0) return;
+    const imgData = ctx.createImageData(gw, gh);
+    for (let i = 0; i < gw * gh; i++) {
+      const t = (density[i] ?? 0) / maxD;
+      const [r, g, b] = colormapLookup(colormap, t);
+      imgData.data[i * 4] = r;
+      imgData.data[i * 4 + 1] = g;
+      imgData.data[i * 4 + 2] = b;
+      imgData.data[i * 4 + 3] = t > 0 ? Math.round(t * 200) : 0;
+    }
+    const offscreen = new OffscreenCanvas(gw, gh);
+    const octx = offscreen.getContext("2d");
+    octx.putImageData(imgData, 0, 0);
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(offscreen, bounds.x, bounds.y, bounds.width, bounds.height);
+    ctx.restore();
+  },
+  validate() {
+    return null;
+  }
+};
+
+// src/distribution-tools.ts
+function textResult(text) {
+  return { content: [{ type: "text", text }] };
+}
+function errorResult(text) {
+  return { content: [{ type: "text", text }], isError: true };
+}
+function makePrng(seed) {
+  let s = (seed | 0) >>> 0;
+  return function rng() {
+    s += 1831565813;
+    let t = s;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function poissonDisk(rng, width, height, minDist, maxAttempts = 30) {
+  const cellSize = minDist / Math.SQRT2;
+  const cols = Math.ceil(width / cellSize);
+  const rows = Math.ceil(height / cellSize);
+  const grid = new Array(cols * rows).fill(-1);
+  const pts = [];
+  const active = [];
+  function addPt(x, y) {
+    const i = pts.length;
+    pts.push([x, y]);
+    active.push(i);
+    grid[Math.floor(y / cellSize) * cols + Math.floor(x / cellSize)] = i;
+  }
+  addPt(rng() * width, rng() * height);
+  while (active.length > 0) {
+    const ri = Math.floor(rng() * active.length);
+    const pi = active[ri];
+    const p = pts[pi];
+    let found = false;
+    for (let a = 0; a < maxAttempts; a++) {
+      const angle = rng() * Math.PI * 2;
+      const dist = minDist + rng() * minDist;
+      const nx = p[0] + Math.cos(angle) * dist;
+      const ny = p[1] + Math.sin(angle) * dist;
+      if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+      const gx = Math.floor(nx / cellSize);
+      const gy = Math.floor(ny / cellSize);
+      let ok = true;
+      for (let dx = -2; dx <= 2 && ok; dx++) {
+        for (let dy = -2; dy <= 2 && ok; dy++) {
+          const ngx = gx + dx, ngy = gy + dy;
+          if (ngx < 0 || ngx >= cols || ngy < 0 || ngy >= rows) continue;
+          const ni = grid[ngy * cols + ngx];
+          if (ni === void 0 || ni === -1) continue;
+          const q = pts[ni];
+          const ddx = q[0] - nx, ddy = q[1] - ny;
+          if (ddx * ddx + ddy * ddy < minDist * minDist) ok = false;
+        }
+      }
+      if (ok) {
+        addPt(nx, ny);
+        found = true;
+        break;
+      }
+    }
+    if (!found) active.splice(ri, 1);
+  }
+  return pts.map(([x, y]) => ({ x, y }));
+}
+var distributePointsTool = {
+  name: "distribute_points",
+  description: "Generate a spatial distribution of points using a named algorithm (poisson-disk, phyllotaxis, hex-grid, jittered-grid, and more). Returns the point array and count.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      algorithm: {
+        type: "string",
+        enum: [
+          "poisson-disk",
+          "phyllotaxis",
+          "hex-grid",
+          "tri-grid",
+          "jittered-grid",
+          "r2-sequence",
+          "halton",
+          "best-candidate",
+          "latin-hypercube",
+          "lloyd-relax"
+        ],
+        description: "Distribution algorithm"
+      },
+      width: { type: "number", description: "Canvas width in pixels" },
+      height: { type: "number", description: "Canvas height in pixels" },
+      params: {
+        type: "object",
+        description: "Algorithm-specific parameters (minDist, count, size, jitter, etc.)",
+        additionalProperties: true
+      },
+      seed: { type: "number", description: "PRNG seed for reproducibility" }
+    },
+    required: ["algorithm", "width", "height"]
+  },
+  async handler(input, _context) {
+    const algorithm = String(input.algorithm);
+    const width = Number(input.width);
+    const height = Number(input.height);
+    const params = input.params ?? {};
+    const rng = makePrng(Number(input.seed ?? 0));
+    let points = [];
+    switch (algorithm) {
+      case "poisson-disk": {
+        const minDist = params.minDist ?? 20;
+        const raw = poissonDisk(rng, width, height, minDist, params.maxAttempts ?? 30);
+        points = raw.map((p, i) => ({ ...p, size: 1, index: i }));
+        break;
+      }
+      case "phyllotaxis": {
+        const n = params.count ?? 200;
+        const PHI = Math.PI * (3 - Math.sqrt(5));
+        const scale = params.scale ?? Math.min(width, height) / 2;
+        for (let i = 0; i < n; i++) {
+          const r = Math.sqrt(i / n) * scale;
+          const theta = i * PHI;
+          points.push({ x: width / 2 + r * Math.cos(theta), y: height / 2 + r * Math.sin(theta), size: 1, index: i });
+        }
+        break;
+      }
+      case "hex-grid": {
+        const size = params.size ?? 20;
+        const colW = size * 1.5, rowH = size * Math.sqrt(3);
+        let idx = 0;
+        for (let col = 0; col <= Math.ceil(width / colW); col++) {
+          for (let row = 0; row <= Math.ceil(height / rowH); row++) {
+            const x = col * colW;
+            const y = row * rowH + (col % 2 === 1 ? rowH / 2 : 0);
+            if (x <= width && y <= height) points.push({ x, y, size, index: idx++ });
+          }
+        }
+        break;
+      }
+      case "tri-grid": {
+        const size = params.size ?? 20;
+        const rowH = size * Math.sqrt(3) / 2;
+        let idx = 0;
+        for (let row = 0; row * rowH <= height; row++) {
+          const offset = row % 2 === 1 ? size / 2 : 0;
+          for (let col = 0; col * size + offset <= width; col++) {
+            points.push({ x: col * size + offset, y: row * rowH, size, index: idx++ });
+          }
+        }
+        break;
+      }
+      case "jittered-grid": {
+        const size = params.size ?? 30;
+        const jitter = params.jitter ?? 0.5;
+        let idx = 0;
+        for (let row = 0; row * size < height; row++) {
+          for (let col = 0; col * size < width; col++) {
+            points.push({
+              x: (col + 0.5 + (rng() - 0.5) * jitter) * size,
+              y: (row + 0.5 + (rng() - 0.5) * jitter) * size,
+              size: 1,
+              index: idx++
+            });
+          }
+        }
+        break;
+      }
+      case "r2-sequence": {
+        const n = params.count ?? 100;
+        const g = 1.324717957244746;
+        const a1 = 1 / g, a2 = 1 / (g * g);
+        for (let i = 0; i < n; i++) {
+          points.push({ x: (0.5 + a1 * i) % 1 * width, y: (0.5 + a2 * i) % 1 * height, size: 1, index: i });
+        }
+        break;
+      }
+      case "halton": {
+        let haltonBase2 = function(i, base) {
+          let f = 1, r = 0;
+          while (i > 0) {
+            f /= base;
+            r += f * (i % base);
+            i = Math.floor(i / base);
+          }
+          return r;
+        };
+        var haltonBase = haltonBase2;
+        const n = params.count ?? 100;
+        for (let i = 0; i < n; i++) {
+          points.push({ x: haltonBase2(i + 1, 2) * width, y: haltonBase2(i + 1, 3) * height, size: 1, index: i });
+        }
+        break;
+      }
+      case "best-candidate": {
+        const n = params.count ?? 100;
+        const k = params.candidates ?? 10;
+        for (let i = 0; i < n; i++) {
+          let bestX = 0, bestY = 0, bestDist = -1;
+          for (let c = 0; c < k; c++) {
+            const cx = rng() * width, cy = rng() * height;
+            let minD = Infinity;
+            for (const pt of points) {
+              const dx = cx - pt.x, dy = cy - (pt.y ?? 0);
+              const d = dx * dx + dy * dy;
+              if (d < minD) minD = d;
+            }
+            if (points.length === 0) minD = Infinity;
+            if (minD > bestDist) {
+              bestDist = minD;
+              bestX = cx;
+              bestY = cy;
+            }
+          }
+          points.push({ x: bestX, y: bestY, size: 1, index: i });
+        }
+        break;
+      }
+      case "latin-hypercube": {
+        const n = params.count ?? 100;
+        const xs = Array.from({ length: n }, (_, i) => i);
+        const ys = Array.from({ length: n }, (_, i) => i);
+        for (let i = n - 1; i > 0; i--) {
+          const j = Math.floor(rng() * (i + 1));
+          [xs[i], xs[j]] = [xs[j], xs[i]];
+          const k2 = Math.floor(rng() * (i + 1));
+          [ys[i], ys[k2]] = [ys[k2], ys[i]];
+        }
+        const cellW = width / n, cellH = height / n;
+        for (let i = 0; i < n; i++) {
+          points.push({ x: (xs[i] + rng()) * cellW, y: (ys[i] + rng()) * cellH, size: 1, index: i });
+        }
+        break;
+      }
+      default: {
+        const n = params.count ?? 100;
+        for (let i = 0; i < n; i++) {
+          points.push({ x: rng() * width, y: rng() * height, size: 1, index: i });
+        }
+      }
+    }
+    return textResult(JSON.stringify({
+      points,
+      count: points.length,
+      bounds: { x: 0, y: 0, width, height }
+    }));
+  }
+};
+var packCirclesTool = {
+  name: "pack_circles",
+  description: "Pack non-overlapping circles within a region using trial-and-reject sampling. Returns (x, y, radius) tuples and coverage percentage.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      width: { type: "number" },
+      height: { type: "number" },
+      minRadius: { type: "number", default: 5 },
+      maxRadius: { type: "number", default: 50 },
+      count: { type: "number", default: 100 },
+      padding: { type: "number", default: 2 },
+      seed: { type: "number", default: 0 }
+    },
+    required: ["width", "height"]
+  },
+  async handler(input, _context) {
+    const width = Number(input.width);
+    const height = Number(input.height);
+    const minRadius = Number(input.minRadius ?? 5);
+    const maxRadius = Number(input.maxRadius ?? 50);
+    const count = Number(input.count ?? 100);
+    const padding = Number(input.padding ?? 2);
+    const rng = makePrng(Number(input.seed ?? 0));
+    const circles = [];
+    const maxAttempts = 500;
+    for (let c = 0; c < count; c++) {
+      for (let a = 0; a < maxAttempts; a++) {
+        const r = minRadius + rng() * (maxRadius - minRadius);
+        const x = r + padding + rng() * (width - 2 * r - 2 * padding);
+        const y = r + padding + rng() * (height - 2 * r - 2 * padding);
+        if (x < 0 || y < 0) continue;
+        let ok = true;
+        for (const ci of circles) {
+          const dx = x - ci.x, dy = y - ci.y;
+          if (dx * dx + dy * dy < (r + ci.radius + padding) ** 2) {
+            ok = false;
+            break;
+          }
+        }
+        if (ok) {
+          circles.push({ x, y, radius: r, index: circles.length });
+          break;
+        }
+      }
+    }
+    const area = circles.reduce((acc, c) => acc + Math.PI * c.radius * c.radius, 0);
+    return textResult(JSON.stringify({
+      circles,
+      count: circles.length,
+      coverage: area / (width * height)
+    }));
+  }
+};
+var packRectsTool = {
+  name: "pack_rects",
+  description: "Pack rectangles into a bin using the guillotine algorithm. Returns placements with x, y, width, height, and rotated flag.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      rects: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: { w: { type: "number" }, h: { type: "number" }, id: { type: "string" } },
+          required: ["w", "h"]
+        }
+      },
+      width: { type: "number" },
+      height: { type: "number" },
+      padding: { type: "number", default: 2 },
+      allowRotation: { type: "boolean", default: false }
+    },
+    required: ["rects", "width", "height"]
+  },
+  async handler(input, _context) {
+    const rects = input.rects;
+    const width = Number(input.width);
+    const height = Number(input.height);
+    const padding = Number(input.padding ?? 2);
+    const allowRotation = Boolean(input.allowRotation ?? false);
+    const sorted = rects.slice().sort((a, b) => b.h * b.w - a.h * a.w);
+    const free = [{ x: 0, y: 0, w: width, h: height }];
+    const placements = [];
+    for (const rect of sorted) {
+      const rw = rect.w + padding, rh = rect.h + padding;
+      let bestScore = Infinity, bestFi = -1, bestRot = false;
+      for (let fi = 0; fi < free.length; fi++) {
+        const f = free[fi];
+        if (f.w >= rw && f.h >= rh) {
+          const score = Math.min(f.w - rw, f.h - rh);
+          if (score < bestScore) {
+            bestScore = score;
+            bestFi = fi;
+            bestRot = false;
+          }
+        }
+        if (allowRotation && f.w >= rh && f.h >= rw) {
+          const score = Math.min(f.w - rh, f.h - rw);
+          if (score < bestScore) {
+            bestScore = score;
+            bestFi = fi;
+            bestRot = true;
+          }
+        }
+      }
+      if (bestFi >= 0) {
+        const f = free[bestFi];
+        const pw = bestRot ? rh : rw, ph = bestRot ? rw : rh;
+        placements.push({ x: f.x, y: f.y, w: rect.w, h: rect.h, id: rect.id, rotated: bestRot });
+        free.splice(bestFi, 1);
+        if (f.w - pw > 0 && ph > 0) free.push({ x: f.x + pw, y: f.y, w: f.w - pw, h: ph });
+        if (f.w > 0 && f.h - ph > 0) free.push({ x: f.x, y: f.y + ph, w: f.w, h: f.h - ph });
+      } else {
+        placements.push(null);
+      }
+    }
+    const result = new Array(rects.length).fill(null);
+    for (let i = 0; i < sorted.length; i++) {
+      result[rects.indexOf(sorted[i])] = placements[i];
+    }
+    const packed = result.filter(Boolean).length;
+    const utilization = result.filter(Boolean).reduce((acc, p) => {
+      const pl = p;
+      return acc + pl.w * pl.h;
+    }, 0) / (width * height);
+    return textResult(JSON.stringify({ placements: result, packed, total: rects.length, utilization }));
+  }
+};
+var previewDistributionTool = {
+  name: "preview_distribution",
+  description: "Generate a distribution and add a distribution:preview guide layer to visualize it non-destructively.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      algorithm: { type: "string" },
+      width: { type: "number" },
+      height: { type: "number" },
+      params: { type: "object", additionalProperties: true },
+      dotSize: { type: "number", default: 3 },
+      dotColor: { type: "string", default: "#0088ff" },
+      layerName: { type: "string" },
+      seed: { type: "number", default: 0 }
+    },
+    required: ["algorithm"]
+  },
+  async handler(input, context) {
+    const algorithm = String(input.algorithm);
+    const canvasW = Number(input.width ?? context.canvasWidth);
+    const canvasH = Number(input.height ?? context.canvasHeight);
+    const ptResult = await distributePointsTool.handler(
+      { ...input, algorithm, width: canvasW, height: canvasH },
+      context
+    );
+    const ptText = ptResult.content[0];
+    if (!ptText || ptText.type !== "text" || ptResult.isError) {
+      return errorResult(\`Failed to generate distribution for algorithm "\${algorithm}".\`);
+    }
+    const data = JSON.parse(ptText.text);
+    const layerId = \`dist-preview-\${Date.now().toString(36)}\`;
+    context.layers.add({
+      id: layerId,
+      type: "distribution:preview",
+      name: input.layerName ?? \`\${algorithm} preview\`,
+      visible: true,
+      locked: false,
+      opacity: 1,
+      blendMode: "normal",
+      transform: { x: 0, y: 0, width: canvasW, height: canvasH, rotation: 0, scaleX: 1, scaleY: 1, anchorX: 0.5, anchorY: 0.5 },
+      properties: {
+        algorithm,
+        params: JSON.stringify(input.params ?? {}),
+        dotSize: Number(input.dotSize ?? 3),
+        dotColor: String(input.dotColor ?? "#0088ff"),
+        opacity: 0.6,
+        _points: JSON.stringify(data.points)
+      }
+    });
+    context.emitChange("layer-added");
+    return textResult(\`Added distribution preview layer '\${layerId}' with \${data.count} points (algorithm: \${algorithm}).\`);
+  }
+};
+var clearDistributionPreviewTool = {
+  name: "clear_distribution_preview",
+  description: "Remove distribution:preview or distribution:voronoi guide layers from the document.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      layerId: { type: "string", description: "Specific layer ID to remove; omit to remove all distribution guide layers" }
+    }
+  },
+  async handler(input, context) {
+    const layerId = input.layerId;
+    const allLayers = context.layers.getAll();
+    const toRemove = layerId ? allLayers.filter((l) => l.id === layerId) : allLayers.filter((l) => l.type.startsWith("distribution:"));
+    if (toRemove.length === 0) {
+      return textResult("No distribution guide layers found to remove.");
+    }
+    for (const l of toRemove) {
+      context.layers.remove(l.id);
+    }
+    context.emitChange("layer-removed");
+    return textResult(\`Removed \${toRemove.length} distribution guide layer(s).\`);
+  }
+};
+var growPatternTool = {
+  name: "grow_pattern",
+  description: "Run a growth algorithm (DLA, differential-growth, substrate) and return the resulting point set and/or paths.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      algorithm: {
+        type: "string",
+        enum: ["dla", "differential-growth", "substrate"]
+      },
+      width: { type: "number" },
+      height: { type: "number" },
+      iterations: { type: "number", default: 100 },
+      seeds: {
+        type: "array",
+        items: { type: "object", properties: { x: { type: "number" }, y: { type: "number" } } }
+      },
+      params: { type: "object", additionalProperties: true },
+      seed: { type: "number", default: 0 }
+    },
+    required: ["algorithm", "width", "height"]
+  },
+  async handler(input, _context) {
+    const algorithm = String(input.algorithm);
+    const width = Number(input.width);
+    const height = Number(input.height);
+    const iterations = Number(input.iterations ?? 100);
+    const rng = makePrng(Number(input.seed ?? 0));
+    if (algorithm === "dla") {
+      const attached = [{ x: width / 2, y: height / 2 }];
+      const grid = new Uint8Array(width * height);
+      grid[Math.floor(height / 2) * width + Math.floor(width / 2)] = 1;
+      for (let w = 0; w < iterations * 10; w++) {
+        let wx = Math.floor(rng() * width);
+        let wy = Math.floor(rng() * height);
+        for (let step = 0; step < 500; step++) {
+          wx += Math.round(rng() * 2 - 1);
+          wy += Math.round(rng() * 2 - 1);
+          if (wx < 0 || wx >= width || wy < 0 || wy >= height) break;
+          let hasN = false;
+          for (let dx = -1; dx <= 1 && !hasN; dx++) {
+            for (let dy = -1; dy <= 1 && !hasN; dy++) {
+              const nx = wx + dx, ny = wy + dy;
+              if (nx >= 0 && nx < width && ny >= 0 && ny < height && grid[ny * width + nx]) hasN = true;
+            }
+          }
+          if (hasN) {
+            grid[wy * width + wx] = 1;
+            attached.push({ x: wx, y: wy });
+            break;
+          }
+        }
+      }
+      return textResult(JSON.stringify({ points: attached.map((p, i) => ({ ...p, index: i })), count: attached.length }));
+    }
+    return textResult(JSON.stringify({
+      message: \`Growth algorithm "\${algorithm}" with \${iterations} iterations. Use the \${algorithm} component in sketch code for full control.\`,
+      algorithm,
+      dimensions: { width, height },
+      iterations
+    }));
+  }
+};
+var tileRegionTool = {
+  name: "tile_region",
+  description: "Tile a region using Wave Function Collapse. Returns a 2D grid of tile IDs.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      tileSet: {
+        type: "object",
+        description: "Tile set: {tiles: [{id, weight?}], adjacency: {[id]: {up, down, left, right}: string[]}}"
+      },
+      width: { type: "number", description: "Grid width in tiles" },
+      height: { type: "number", description: "Grid height in tiles" },
+      seed: { type: "number", default: 0 }
+    },
+    required: ["tileSet", "width", "height"]
+  },
+  async handler(input, _context) {
+    const tileSet = input.tileSet;
+    const width = Number(input.width);
+    const height = Number(input.height);
+    const rng = makePrng(Number(input.seed ?? 0));
+    const tiles = tileSet.tiles;
+    const adj = tileSet.adjacency;
+    const tileIds = tiles.map((t) => t.id);
+    const weights = {};
+    tiles.forEach((t) => {
+      weights[t.id] = t.weight ?? 1;
+    });
+    const wave = [];
+    for (let r = 0; r < height; r++) {
+      wave.push([]);
+      for (let c = 0; c < width; c++) {
+        const wRow = wave[r];
+        wRow.push(tileIds[Math.floor(rng() * tileIds.length)] ?? tileIds[0] ?? "");
+      }
+    }
+    for (let r = 0; r < height; r++) {
+      for (let c = 0; c < width; c++) {
+        const tid = wave[r][c];
+        const nbrs = [[-1, 0, "down"], [1, 0, "up"], [0, -1, "right"], [0, 1, "left"]];
+        for (const [dr, dc, opp] of nbrs) {
+          const nr = r + dr, nc = c + dc;
+          if (nr < 0 || nr >= height || nc < 0 || nc >= width) continue;
+          const allowed = adj[tid]?.[opp] ?? tileIds;
+          if (!allowed.includes(wave[nr][nc])) {
+            wave[nr][nc] = allowed[Math.floor(rng() * allowed.length)] ?? wave[nr][nc];
+          }
+        }
+      }
+    }
+    return textResult(JSON.stringify({
+      grid: wave,
+      width,
+      height,
+      tiles: wave.flat().map((id, i) => ({ id, col: i % width, row: Math.floor(i / width) }))
+    }));
+  }
+};
+var distributeAlongPathTool = {
+  name: "distribute_along_path",
+  description: "Distribute points along a polyline using arc-length parameterization.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      path: {
+        type: "array",
+        items: { type: "object", properties: { x: { type: "number" }, y: { type: "number" } } },
+        description: "Polyline points [{x, y}]"
+      },
+      count: { type: "number", default: 20 },
+      spacing: { type: "number", description: "Fixed spacing in pixels (overrides count)" },
+      offset: { type: "number", default: 0, description: "Start offset [0..1]" },
+      closed: { type: "boolean", default: false }
+    },
+    required: ["path"]
+  },
+  async handler(input, _context) {
+    const path = input.path;
+    const count = Number(input.count ?? 20);
+    const spacing = input.spacing != null ? Number(input.spacing) : null;
+    const offset = Number(input.offset ?? 0);
+    const closed = Boolean(input.closed ?? false);
+    if (path.length < 2) return textResult(JSON.stringify({ points: [], count: 0 }));
+    const lens = [0];
+    const pts = closed ? [...path, path[0]] : path;
+    for (let i = 1; i < pts.length; i++) {
+      const dx = pts[i].x - pts[i - 1].x;
+      const dy = pts[i].y - pts[i - 1].y;
+      lens.push(lens[i - 1] + Math.sqrt(dx * dx + dy * dy));
+    }
+    const totalLen = lens[lens.length - 1] ?? 0;
+    if (totalLen === 0) return textResult(JSON.stringify({ points: [], count: 0 }));
+    const n = spacing != null ? Math.floor((totalLen - offset * totalLen) / spacing) : count;
+    const step = spacing ?? totalLen / (closed ? n : Math.max(1, n - 1));
+    const result = [];
+    for (let i = 0; i < n; i++) {
+      const targetLen = offset * totalLen + i * step;
+      if (targetLen > totalLen) break;
+      let lo = 0, hi = lens.length - 2;
+      while (lo < hi) {
+        const mid = lo + hi >> 1;
+        if ((lens[mid + 1] ?? 0) < targetLen) lo = mid + 1;
+        else hi = mid;
+      }
+      const segLen = lens[lo + 1] - lens[lo];
+      const t = segLen > 0 ? (targetLen - lens[lo]) / segLen : 0;
+      const p0 = pts[lo], p1 = pts[lo + 1];
+      result.push({
+        x: p0.x + t * (p1.x - p0.x),
+        y: p0.y + t * (p1.y - p0.y),
+        t: targetLen / totalLen,
+        angle: Math.atan2(p1.y - p0.y, p1.x - p0.x),
+        index: i
+      });
+    }
+    return textResult(JSON.stringify({ points: result, count: result.length, pathLength: totalLen }));
+  }
+};
+var distributionMcpTools = [
+  distributePointsTool,
+  packCirclesTool,
+  packRectsTool,
+  previewDistributionTool,
+  clearDistributionPreviewTool,
+  growPatternTool,
+  tileRegionTool,
+  distributeAlongPathTool
+];
+
+// src/index.ts
+var distributionPlugin = {
+  id: "distribution",
+  name: "Distribution & Packing",
+  version: "0.1.0",
+  tier: "free",
+  description: "Spatial distribution algorithms (Poisson disk, phyllotaxis, hex grid, DLA, WFC, and more) plus circle/rect packing. Includes guide layers for non-destructive distribution previews.",
+  layerTypes: [previewLayerType, voronoiLayerType, densityLayerType],
+  tools: [],
+  exportHandlers: [],
+  mcpTools: distributionMcpTools,
+  async initialize(_context) {
+  },
+  dispose() {
+  }
+};
+var index_default = distributionPlugin;
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  densityLayerType,
+  distributionMcpTools,
+  distributionPlugin,
+  previewLayerType,
+  voronoiLayerType
+});
+
+    var __plugin = module.exports.default || module.exports;
+    if (__plugin && __plugin.layerTypes) {
+    var lt_distribution_preview = __plugin.layerTypes.find(function(t) { return t.typeId === "distribution:preview"; });
+    if (lt_distribution_preview) __R["distribution:preview"] = (function(lt) {
+      return function(ctx, properties, bounds) {
+        lt.render(properties, ctx, bounds, {});
+      };
+    })(lt_distribution_preview);
+    var lt_distribution_voronoi = __plugin.layerTypes.find(function(t) { return t.typeId === "distribution:voronoi"; });
+    if (lt_distribution_voronoi) __R["distribution:voronoi"] = (function(lt) {
+      return function(ctx, properties, bounds) {
+        lt.render(properties, ctx, bounds, {});
+      };
+    })(lt_distribution_voronoi);
+    var lt_distribution_density = __plugin.layerTypes.find(function(t) { return t.typeId === "distribution:density"; });
+    if (lt_distribution_density) __R["distribution:density"] = (function(lt) {
+      return function(ctx, properties, bounds) {
+        lt.render(properties, ctx, bounds, {});
+      };
+    })(lt_distribution_density);
     }
   })(RENDERERS);
 
@@ -27316,27 +26831,27 @@ var herringboneLayerType = {
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(angle);
-    const bw = blockWidth;
-    const bh = blockHeight;
-    const g = gap;
-    const cos45 = Math.SQRT1_2;
-    const projW = (bw + bh) * cos45;
-    const projH = (bw - bh) * cos45;
-    const stepX = bw * cos45 + g * 0.5;
-    const stepY = bw * cos45 + g * 0.5;
-    const cols = Math.ceil(2 * diagonal / stepX) + 4;
-    const rows = Math.ceil(2 * diagonal / stepY) + 4;
+    const unitW = blockWidth + gap;
+    const unitH = blockHeight + gap;
+    const cols = Math.ceil(2 * diagonal / unitW) + 4;
+    const rows = Math.ceil(2 * diagonal / unitH) + 4;
+    const halfW = cols * unitW / 2;
+    const halfH = rows * unitH / 2;
     ctx.fillStyle = color1;
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
-        const baseX = -diagonal + col * stepX;
-        const baseY = -diagonal + row * stepY;
-        const yOff = col % 2 === 0 ? 0 : stepY * 0.5;
-        const brickAngle = col % 2 === 0 ? Math.PI / 4 : -Math.PI / 4;
+        const x = -halfW + col * unitW;
+        const y = -halfH + row * unitH;
+        const isEvenRow = row % 2 === 0;
+        const offset = isEvenRow ? 0 : unitW / 2;
         ctx.save();
-        ctx.translate(baseX, baseY + yOff);
-        ctx.rotate(brickAngle);
-        ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
+        ctx.translate(x + offset, y);
+        const isFlipped = (row + col) % 2 === 0;
+        if (isFlipped) {
+          ctx.fillRect(0, 0, blockWidth, blockHeight);
+        } else {
+          ctx.fillRect(0, 0, blockHeight, blockWidth);
+        }
         ctx.restore();
       }
     }
@@ -28125,32 +27640,27 @@ function renderArrow(ctx, diagonal, size, gap, color1, color2) {
   }
 }
 function renderKaleidoscope(ctx, diagonal, size, gap, color1, color2) {
-  const s = size - gap;
-  const r = s;
-  const unitW = r * Math.sqrt(3) + gap;
-  const unitH = r * 1.5 + gap;
-  const cols = Math.ceil(2 * diagonal / unitW) + 4;
-  const rows = Math.ceil(2 * diagonal / unitH) + 4;
+  const unitSize = size + gap;
+  const count = Math.ceil(2 * diagonal / unitSize) + 4;
   ctx.fillStyle = color2;
   ctx.fillRect(-diagonal, -diagonal, diagonal * 2, diagonal * 2);
-  for (let row = 0; row < rows; row++) {
-    const xOff = row % 2 === 0 ? 0 : unitW / 2;
-    for (let col = 0; col < cols; col++) {
-      const cx = -diagonal + col * unitW + xOff;
-      const cy = -diagonal + row * unitH;
+  for (let row = 0; row < count; row++) {
+    for (let col = 0; col < count; col++) {
+      const cx = -diagonal + col * unitSize;
+      const cy = -diagonal + row * unitSize;
+      const s = size - gap;
       for (let i = 0; i < 6; i++) {
-        const a1 = Math.PI / 3 * i - Math.PI / 6;
-        const a2 = Math.PI / 3 * (i + 1) - Math.PI / 6;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(Math.PI / 3 * i);
         ctx.fillStyle = i % 2 === 0 ? color1 : color2;
         ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx + r * Math.cos(a1), cy + r * Math.sin(a1));
-        ctx.lineTo(cx + r * Math.cos(a2), cy + r * Math.sin(a2));
+        ctx.moveTo(0, 0);
+        ctx.lineTo(s / 2, -s * 0.43);
+        ctx.lineTo(-s / 2, -s * 0.43);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = color1;
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
+        ctx.restore();
       }
     }
   }
@@ -29493,26 +29003,20 @@ function renderAsanoha(ctx, diagonal, size, lw, color1, color2) {
 function renderSeigaiha(ctx, diagonal, size, lw, color1, color2) {
   ctx.fillStyle = color2;
   ctx.fillRect(-diagonal, -diagonal, diagonal * 2, diagonal * 2);
+  ctx.strokeStyle = color1;
+  ctx.lineWidth = lw;
   const r = size / 2;
   const unitW = size;
   const unitH = r * 0.75;
   const cols = Math.ceil(2 * diagonal / unitW) + 4;
   const rows = Math.ceil(2 * diagonal / unitH) + 4;
-  const rings = 4;
-  for (let row = rows - 1; row >= 0; row--) {
+  for (let row = 0; row < rows; row++) {
     const xOff = row % 2 === 0 ? 0 : unitW / 2;
     for (let col = 0; col < cols; col++) {
       const cx = -diagonal + col * unitW + xOff;
       const cy = -diagonal + row * unitH;
-      ctx.fillStyle = color2;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, Math.PI, 0, false);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = color1;
-      ctx.lineWidth = lw;
-      for (let ring = 1; ring <= rings; ring++) {
-        const rr = r * (ring / rings);
+      for (let ring = 1; ring <= 3; ring++) {
+        const rr = r * (ring / 3);
         ctx.beginPath();
         ctx.arc(cx, cy, rr, Math.PI, 0, false);
         ctx.stroke();
@@ -30297,104 +29801,105 @@ var CUBE_PROPERTIES = [
 ];
 var VALID_STYLES9 = ["isometric", "stacked", "tumbling-blocks"];
 function drawIsoCube(ctx, cx, cy, size, color1, color2, color3) {
-  const halfW = size * (Math.sqrt(3) / 2);
-  const halfH = size / 2;
+  const h = size * (Math.sqrt(3) / 2);
   ctx.fillStyle = color1;
   ctx.beginPath();
-  ctx.moveTo(cx, cy - size);
-  ctx.lineTo(cx + halfW, cy - halfH);
+  ctx.moveTo(cx, cy - h);
+  ctx.lineTo(cx + size / 2, cy - h / 2);
   ctx.lineTo(cx, cy);
-  ctx.lineTo(cx - halfW, cy - halfH);
+  ctx.lineTo(cx - size / 2, cy - h / 2);
   ctx.closePath();
   ctx.fill();
   ctx.fillStyle = color2;
   ctx.beginPath();
-  ctx.moveTo(cx - halfW, cy - halfH);
+  ctx.moveTo(cx - size / 2, cy - h / 2);
   ctx.lineTo(cx, cy);
-  ctx.lineTo(cx, cy + size);
-  ctx.lineTo(cx - halfW, cy + halfH);
+  ctx.lineTo(cx, cy + h);
+  ctx.lineTo(cx - size / 2, cy + h / 2);
   ctx.closePath();
   ctx.fill();
   ctx.fillStyle = color3;
   ctx.beginPath();
-  ctx.moveTo(cx + halfW, cy - halfH);
+  ctx.moveTo(cx + size / 2, cy - h / 2);
   ctx.lineTo(cx, cy);
-  ctx.lineTo(cx, cy + size);
-  ctx.lineTo(cx + halfW, cy + halfH);
+  ctx.lineTo(cx, cy + h);
+  ctx.lineTo(cx + size / 2, cy + h / 2);
   ctx.closePath();
   ctx.fill();
 }
 function renderIsometric(ctx, diagonal, size, gap, color1, color2, color3) {
-  const cubeW = size * Math.sqrt(3) + gap;
-  const cubeH = size * 1.5 + gap;
-  const cols = Math.ceil(2 * diagonal / cubeW) + 4;
-  const rows = Math.ceil(2 * diagonal / cubeH) + 4;
+  const h = size * (Math.sqrt(3) / 2);
+  const unitW = size + gap;
+  const unitH = h * 2 + gap;
+  const cols = Math.ceil(2 * diagonal / unitW) + 4;
+  const rows = Math.ceil(2 * diagonal / unitH) + 4;
   ctx.fillStyle = "#f8f9fa";
   ctx.fillRect(-diagonal, -diagonal, diagonal * 2, diagonal * 2);
   for (let row = 0; row < rows; row++) {
-    const xOff = row % 2 === 0 ? 0 : cubeW / 2;
+    const xOff = row % 2 === 0 ? 0 : unitW / 2;
     for (let col = 0; col < cols; col++) {
-      const x = -diagonal + col * cubeW + xOff;
-      const y = -diagonal + row * cubeH;
-      drawIsoCube(ctx, x, y, size - gap * 0.5, color1, color2, color3);
+      const x = -diagonal + col * unitW + xOff;
+      const y = -diagonal + row * unitH;
+      drawIsoCube(ctx, x, y, size - gap, color1, color2, color3);
     }
   }
 }
 function renderStacked(ctx, diagonal, size, gap, color1, color2, color3) {
-  const cubeW = size * Math.sqrt(3) + gap;
-  const cubeH = size * 2 + gap;
-  const cols = Math.ceil(2 * diagonal / cubeW) + 4;
-  const rows = Math.ceil(2 * diagonal / cubeH) + 4;
+  const h = size * (Math.sqrt(3) / 2);
+  const unitW = size * 1.5 + gap;
+  const unitH = h * 2 + gap;
+  const cols = Math.ceil(2 * diagonal / unitW) + 4;
+  const rows = Math.ceil(2 * diagonal / unitH) + 4;
   ctx.fillStyle = "#f8f9fa";
   ctx.fillRect(-diagonal, -diagonal, diagonal * 2, diagonal * 2);
   for (let row = 0; row < rows; row++) {
-    const xOff = row % 2 === 0 ? 0 : cubeW / 2;
+    const xOff = row % 2 === 0 ? 0 : unitW / 2;
     for (let col = 0; col < cols; col++) {
-      const x = -diagonal + col * cubeW + xOff;
-      const y = -diagonal + row * cubeH;
-      drawIsoCube(ctx, x, y, size - gap * 0.5, color1, color2, color3);
+      const x = -diagonal + col * unitW + xOff;
+      const y = -diagonal + row * unitH;
+      drawIsoCube(ctx, x, y, size - gap, color1, color2, color3);
     }
   }
 }
 function renderTumblingBlocks(ctx, diagonal, size, _gap, color1, color2, color3) {
-  const halfW = size * (Math.sqrt(3) / 2);
-  const halfH = size / 2;
-  const cubeW = halfW * 2;
-  const cubeH = size * 3;
-  const cols = Math.ceil(2 * diagonal / cubeW) + 4;
-  const rows = Math.ceil(2 * diagonal / cubeH) + 4;
+  const h = size * (Math.sqrt(3) / 2);
+  const unitW = size * 1.5;
+  const unitH = h;
+  const cols = Math.ceil(2 * diagonal / unitW) + 4;
+  const rows = Math.ceil(2 * diagonal / unitH) + 4;
   ctx.fillStyle = "#f8f9fa";
   ctx.fillRect(-diagonal, -diagonal, diagonal * 2, diagonal * 2);
   for (let row = 0; row < rows; row++) {
+    const xOff = row % 2 === 0 ? 0 : unitW * 0.5;
     for (let col = 0; col < cols; col++) {
-      for (let sub = 0; sub < 2; sub++) {
-        const cx = -diagonal + col * cubeW + (sub === 1 ? halfW : 0);
-        const cy = -diagonal + row * cubeH + (sub === 1 ? size * 1.5 : 0);
-        ctx.fillStyle = color1;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy - size);
-        ctx.lineTo(cx + halfW, cy - halfH);
-        ctx.lineTo(cx, cy);
-        ctx.lineTo(cx - halfW, cy - halfH);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = color2;
-        ctx.beginPath();
-        ctx.moveTo(cx - halfW, cy - halfH);
-        ctx.lineTo(cx, cy);
-        ctx.lineTo(cx, cy + size);
-        ctx.lineTo(cx - halfW, cy + halfH);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = color3;
-        ctx.beginPath();
-        ctx.moveTo(cx + halfW, cy - halfH);
-        ctx.lineTo(cx, cy);
-        ctx.lineTo(cx, cy + size);
-        ctx.lineTo(cx + halfW, cy + halfH);
-        ctx.closePath();
-        ctx.fill();
-      }
+      const x = -diagonal + col * unitW + xOff;
+      const y = -diagonal + row * unitH;
+      const hs = size / 2;
+      const hh = h / 2;
+      ctx.fillStyle = color1;
+      ctx.beginPath();
+      ctx.moveTo(x, y - hh);
+      ctx.lineTo(x + hs, y);
+      ctx.lineTo(x, y + hh);
+      ctx.lineTo(x - hs, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = color2;
+      ctx.beginPath();
+      ctx.moveTo(x - hs, y);
+      ctx.lineTo(x, y + hh);
+      ctx.lineTo(x - hs, y + h);
+      ctx.lineTo(x - size, y + hh);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = color3;
+      ctx.beginPath();
+      ctx.moveTo(x + hs, y);
+      ctx.lineTo(x, y + hh);
+      ctx.lineTo(x + hs, y + h);
+      ctx.lineTo(x + size, y + hh);
+      ctx.closePath();
+      ctx.fill();
     }
   }
 }
@@ -30615,29 +30120,16 @@ function renderTropicalScatter(ctx, diagonal, size, gap, color1, color2) {
   ctx.fillRect(-diagonal, -diagonal, diagonal * 2, diagonal * 2);
   ctx.strokeStyle = color2;
   ctx.lineWidth = 0.5;
-  const unitSize = size * 1.8 + gap;
+  const unitSize = size + gap;
   const cols = Math.ceil(2 * diagonal / unitSize) + 4;
   const rows = Math.ceil(2 * diagonal / unitSize) + 4;
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
-      const lh = (v) => {
-        let x2 = v;
-        x2 = Math.imul(x2 ^ x2 >>> 13, 1274126177);
-        x2 = x2 ^ x2 >>> 16;
-        return ((x2 & 2147483647) >>> 0) / 2147483647;
-      };
-      const h1 = lh((row | 0) * 374761393 + (col | 0) * 668265263 + 1);
-      const h2 = lh((row | 0) * 374761393 + (col | 0) * 668265263 + 2654435761);
-      const h3 = lh((row | 0) * 374761393 + (col | 0) * 668265263 + 1274126177);
-      const h4 = lh((row | 0) * 374761393 + (col | 0) * 668265263 + 879190747);
-      const h5 = lh((row | 0) * 374761393 + (col | 0) * 668265263 + 456789013);
-      if (h5 < 0.12) continue;
-      const angle = h1 * Math.PI * 2;
-      const leafScale = 0.5 + h2 * 0.7;
-      const jitterX = (h3 - 0.5) * unitSize * 0.8;
-      const jitterY = (h4 - 0.5) * unitSize * 0.8;
-      const x = -diagonal + col * unitSize + unitSize / 2 + jitterX;
-      const y = -diagonal + row * unitSize + unitSize / 2 + jitterY;
+      const seed = row * 127 + col * 311 & 65535;
+      const angle = seed / 65535 * Math.PI * 2;
+      const leafScale = 0.7 + seed % 100 / 200;
+      const x = -diagonal + col * unitSize + (seed % 7 - 3) * 2;
+      const y = -diagonal + row * unitSize + (seed % 11 - 5) * 2;
       ctx.fillStyle = color1;
       drawLeaf(ctx, x, y, size * leafScale, angle);
     }
@@ -30650,15 +30142,11 @@ function renderVineTrail(ctx, diagonal, size, gap, color1, color2) {
   ctx.lineWidth = 1.5;
   const rowH = size * 2 + gap;
   const rows = Math.ceil(2 * diagonal / rowH) + 4;
-  const waveFreq = 1 / (size * 0.5);
-  const waveAmp = size * 0.4;
   for (let row = 0; row < rows; row++) {
     const baseY = -diagonal + row * rowH;
-    ctx.strokeStyle = color1;
-    ctx.lineWidth = 1.5;
     ctx.beginPath();
     for (let x = -diagonal; x < diagonal; x += 2) {
-      const y = baseY + Math.sin(x * waveFreq) * waveAmp;
+      const y = baseY + Math.sin(x / (size * 0.5)) * (size * 0.4);
       if (x === -diagonal) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
@@ -30670,16 +30158,12 @@ function renderVineTrail(ctx, diagonal, size, gap, color1, color2) {
     const leafCount = Math.ceil(diagonal * 2 / leafSpacing);
     for (let i = 0; i < leafCount; i++) {
       const x = -diagonal + i * leafSpacing;
-      const y = baseY + Math.sin(x * waveFreq) * waveAmp;
-      const tangent = Math.atan2(Math.cos(x * waveFreq) * waveAmp * waveFreq, 1);
+      const y = baseY + Math.sin(x / (size * 0.5)) * (size * 0.4);
       const side = i % 2 === 0 ? 1 : -1;
-      let hv = (row | 0) * 374761393 + (i | 0) * 668265263 + 2654435761;
-      hv = Math.imul(hv ^ hv >>> 13, 1274126177);
-      hv = hv ^ hv >>> 16;
-      const variation = (((hv & 2147483647) >>> 0) / 2147483647 - 0.5) * 0.6;
-      const angle = tangent + side * (Math.PI / 2.5) + variation;
-      drawLeaf(ctx, x, y, size * 0.6, angle);
+      drawLeaf(ctx, x, y, size * 0.6, side * Math.PI / 3);
     }
+    ctx.strokeStyle = color1;
+    ctx.lineWidth = 1.5;
   }
 }
 var LEAF_RENDERERS = {
@@ -30839,9 +30323,9 @@ var FLORAL_PROPERTIES = [
   }
 ];
 var VALID_STYLES11 = ["daisy", "rosette", "cherry-blossom", "sunflower", "abstract-flower"];
-function drawFlower(ctx, cx, cy, size, petals, color1, centerColor, centerRadius) {
-  const petalLen = size * 0.42;
-  const petalW = size * 0.15;
+function drawFlower(ctx, cx, cy, size, petals, color1, centerRadius) {
+  const petalLen = size * 0.45;
+  const petalW = size * 0.2;
   ctx.fillStyle = color1;
   for (let i = 0; i < petals; i++) {
     const angle = i / petals * Math.PI * 2;
@@ -30849,11 +30333,10 @@ function drawFlower(ctx, cx, cy, size, petals, color1, centerColor, centerRadius
     ctx.translate(cx, cy);
     ctx.rotate(angle);
     ctx.beginPath();
-    ctx.ellipse(0, -petalLen, petalW, petalLen * 0.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -petalLen * 0.6, petalW, petalLen, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
-  ctx.fillStyle = centerColor;
   ctx.beginPath();
   ctx.arc(cx, cy, centerRadius, 0, Math.PI * 2);
   ctx.fill();
@@ -30869,7 +30352,7 @@ function renderDaisy(ctx, diagonal, size, gap, color1, color2, petals) {
     for (let col = 0; col < cols; col++) {
       const x = -diagonal + col * unitSize + xOff;
       const y = -diagonal + row * unitSize;
-      drawFlower(ctx, x, y, size, petals, color1, color2, size * 0.12);
+      drawFlower(ctx, x, y, size, petals, color1, size * 0.12);
     }
   }
 }
@@ -30884,9 +30367,9 @@ function renderRosette(ctx, diagonal, size, gap, color1, color2, petals) {
       const x = -diagonal + col * unitSize;
       const y = -diagonal + row * unitSize;
       ctx.globalAlpha = 0.5;
-      drawFlower(ctx, x, y, size, petals, color1, color2, size * 0.1);
+      drawFlower(ctx, x, y, size, petals, color1, size * 0.1);
       ctx.globalAlpha = 1;
-      drawFlower(ctx, x, y, size * 0.6, petals, color1, color2, size * 0.08);
+      drawFlower(ctx, x, y, size * 0.6, petals, color1, size * 0.08);
     }
   }
 }
@@ -31142,51 +30625,31 @@ var MEMPHIS_PROPERTIES = [
   }
 ];
 var VALID_STYLES12 = ["classic", "confetti", "geometric", "squiggle"];
-function cellHash(row, col, channel) {
-  let h = (row | 0) * 374761393 + (col | 0) * 668265263 + (channel | 0) * 2654435761;
-  h = Math.imul(h ^ h >>> 13, 1274126177);
-  h = h ^ h >>> 16;
-  return ((h & 2147483647) >>> 0) / 2147483647;
-}
-function jitteredGrid(diagonal, density, seed, minSpacing = 30) {
-  const area = diagonal * 2 * (diagonal * 2);
-  const count = Math.max(1, Math.floor(area / 1e4 * density));
-  const cellSize = Math.max(minSpacing, Math.sqrt(area / count));
-  const cols = Math.ceil(diagonal * 2 / cellSize) + 2;
-  const rows = Math.ceil(diagonal * 2 / cellSize) + 2;
-  const points = [];
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const skipHash = cellHash(row + seed, col, 5);
-      if (skipHash < 0.15) continue;
-      const jx = cellHash(row + seed, col, 0);
-      const jy = cellHash(row + seed, col, 1);
-      points.push({
-        x: -diagonal + (col + jx) * cellSize,
-        y: -diagonal + (row + jy) * cellSize,
-        rng1: cellHash(row + seed, col, 2),
-        rng2: cellHash(row + seed, col, 3),
-        rng3: cellHash(row + seed, col, 4)
-      });
-    }
-  }
-  return points;
+function seededRandom(seed) {
+  let s = seed;
+  return () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
 }
 function renderClassic(ctx, diagonal, size, density, color1, color2, color3) {
   ctx.fillStyle = "#f5f5f5";
   ctx.fillRect(-diagonal, -diagonal, diagonal * 2, diagonal * 2);
-  const points = jitteredGrid(diagonal, density, 42, size * 2);
+  const area = diagonal * 2 * (diagonal * 2);
+  const count = Math.floor(area / 1e4 * density);
+  const rng = seededRandom(42);
   const colors = [color1, color2, color3];
-  for (const pt of points) {
-    const angle = pt.rng1 * Math.PI * 2;
-    const s = size * (0.5 + pt.rng2 * 0.8);
-    const shape = Math.floor(pt.rng3 * 4);
-    const ci = Math.floor(pt.rng1 * 3 + pt.rng2) % colors.length;
-    ctx.fillStyle = colors[ci];
-    ctx.strokeStyle = colors[(ci + 1) % colors.length];
+  for (let i = 0; i < count; i++) {
+    const x = -diagonal + rng() * diagonal * 2;
+    const y = -diagonal + rng() * diagonal * 2;
+    const angle = rng() * Math.PI * 2;
+    const s = size * (0.5 + rng() * 0.8);
+    const shape = Math.floor(rng() * 4);
+    ctx.fillStyle = colors[Math.floor(rng() * colors.length)];
+    ctx.strokeStyle = colors[Math.floor(rng() * colors.length)];
     ctx.lineWidth = 2;
     ctx.save();
-    ctx.translate(pt.x, pt.y);
+    ctx.translate(x, y);
     ctx.rotate(angle);
     switch (shape) {
       case 0:
@@ -31223,15 +30686,19 @@ function renderClassic(ctx, diagonal, size, density, color1, color2, color3) {
 function renderConfetti(ctx, diagonal, size, density, color1, color2, color3) {
   ctx.fillStyle = "#fafafa";
   ctx.fillRect(-diagonal, -diagonal, diagonal * 2, diagonal * 2);
-  const points = jitteredGrid(diagonal, density, 137, size * 2);
+  const area = diagonal * 2 * (diagonal * 2);
+  const count = Math.floor(area / 1e4 * density);
+  const rng = seededRandom(137);
   const colors = [color1, color2, color3];
-  for (const pt of points) {
-    const angle = pt.rng1 * Math.PI * 2;
-    const w = size * (0.2 + pt.rng2 * 0.3);
-    const h = size * (0.6 + pt.rng3 * 0.4);
-    ctx.fillStyle = colors[Math.floor(pt.rng1 * colors.length)];
+  for (let i = 0; i < count; i++) {
+    const x = -diagonal + rng() * diagonal * 2;
+    const y = -diagonal + rng() * diagonal * 2;
+    const angle = rng() * Math.PI * 2;
+    const w = size * (0.2 + rng() * 0.3);
+    const h = size * (0.6 + rng() * 0.4);
+    ctx.fillStyle = colors[Math.floor(rng() * colors.length)];
     ctx.save();
-    ctx.translate(pt.x, pt.y);
+    ctx.translate(x, y);
     ctx.rotate(angle);
     ctx.fillRect(-w / 2, -h / 2, w, h);
     ctx.restore();
@@ -31240,15 +30707,19 @@ function renderConfetti(ctx, diagonal, size, density, color1, color2, color3) {
 function renderGeometric(ctx, diagonal, size, density, color1, color2, _color3) {
   ctx.fillStyle = color2;
   ctx.fillRect(-diagonal, -diagonal, diagonal * 2, diagonal * 2);
-  const points = jitteredGrid(diagonal, density, 256, size * 2);
-  for (const pt of points) {
-    const angle = pt.rng1 * Math.PI * 2;
-    const s = size * (0.4 + pt.rng2 * 0.6);
-    const shape = Math.floor(pt.rng3 * 3);
+  const area = diagonal * 2 * (diagonal * 2);
+  const count = Math.floor(area / 1e4 * density);
+  const rng = seededRandom(256);
+  for (let i = 0; i < count; i++) {
+    const x = -diagonal + rng() * diagonal * 2;
+    const y = -diagonal + rng() * diagonal * 2;
+    const angle = rng() * Math.PI * 2;
+    const s = size * (0.4 + rng() * 0.6);
+    const shape = Math.floor(rng() * 3);
     ctx.strokeStyle = color1;
     ctx.lineWidth = 1.5;
     ctx.save();
-    ctx.translate(pt.x, pt.y);
+    ctx.translate(x, y);
     ctx.rotate(angle);
     switch (shape) {
       case 0:
@@ -31274,15 +30745,19 @@ function renderGeometric(ctx, diagonal, size, density, color1, color2, _color3) 
 function renderSquiggle(ctx, diagonal, size, density, color1, color2, _color3) {
   ctx.fillStyle = color2;
   ctx.fillRect(-diagonal, -diagonal, diagonal * 2, diagonal * 2);
-  const points = jitteredGrid(diagonal, density, 311, size * 2);
+  const area = diagonal * 2 * (diagonal * 2);
+  const count = Math.floor(area / 1e4 * density);
+  const rng = seededRandom(311);
   ctx.strokeStyle = color1;
   ctx.lineWidth = 2;
   ctx.lineCap = "round";
-  for (const pt of points) {
-    const angle = pt.rng1 * Math.PI * 2;
-    const len = size * (0.8 + pt.rng2 * 0.5);
+  for (let i = 0; i < count; i++) {
+    const x = -diagonal + rng() * diagonal * 2;
+    const y = -diagonal + rng() * diagonal * 2;
+    const angle = rng() * Math.PI * 2;
+    const len = size * (0.8 + rng() * 0.5);
     ctx.save();
-    ctx.translate(pt.x, pt.y);
+    ctx.translate(x, y);
     ctx.rotate(angle);
     ctx.beginPath();
     ctx.moveTo(-len / 2, 0);
@@ -31980,62 +31455,37 @@ var TERRAZZO_PROPERTIES = [
   }
 ];
 var VALID_STYLES15 = ["classic", "bold", "blob"];
-function seededRandom(seed) {
+function seededRandom2(seed) {
   let s = seed;
   return () => {
     s = (s * 16807 + 0) % 2147483647;
     return (s - 1) / 2147483646;
   };
 }
-function cellHash2(row, col, channel) {
-  let h = (row | 0) * 374761393 + (col | 0) * 668265263 + (channel | 0) * 2654435761;
-  h = Math.imul(h ^ h >>> 13, 1274126177);
-  h = h ^ h >>> 16;
-  return ((h & 2147483647) >>> 0) / 2147483647;
-}
-function jitteredGrid2(diagonal, density, seed, minSpacing = 30) {
-  const area = diagonal * 2 * (diagonal * 2);
-  const count = Math.max(1, Math.floor(area / 1e4 * density));
-  const cellSize = Math.max(minSpacing, Math.sqrt(area / count));
-  const cols = Math.ceil(diagonal * 2 / cellSize) + 2;
-  const rows = Math.ceil(diagonal * 2 / cellSize) + 2;
-  const points = [];
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const skipHash = cellHash2(row + seed, col, 5);
-      if (skipHash < 0.15) continue;
-      points.push({
-        x: -diagonal + (col + cellHash2(row + seed, col, 0)) * cellSize,
-        y: -diagonal + (row + cellHash2(row + seed, col, 1)) * cellSize,
-        rng1: cellHash2(row + seed, col, 2),
-        rng2: cellHash2(row + seed, col, 3),
-        rng3: cellHash2(row + seed, col, 4)
-      });
-    }
-  }
-  return points;
-}
 function renderClassic2(ctx, diagonal, size, density, color1, color2, color3) {
   ctx.fillStyle = "#f0ece3";
   ctx.fillRect(-diagonal, -diagonal, diagonal * 2, diagonal * 2);
-  const points = jitteredGrid2(diagonal, density, 42, size * 2);
+  const area = diagonal * 2 * (diagonal * 2);
+  const count = Math.floor(area / 1e4 * density);
+  const rng = seededRandom2(42);
   const colors = [color1, color2, color3];
-  const rng = seededRandom(42);
-  for (const pt of points) {
-    const angle = pt.rng1 * Math.PI * 2;
-    const w = size * (0.3 + pt.rng2 * 0.7);
-    const h = size * (0.15 + pt.rng3 * 0.3);
-    ctx.fillStyle = colors[Math.floor(pt.rng1 * colors.length)];
+  for (let i = 0; i < count; i++) {
+    const x = -diagonal + rng() * diagonal * 2;
+    const y = -diagonal + rng() * diagonal * 2;
+    const angle = rng() * Math.PI * 2;
+    const w = size * (0.3 + rng() * 0.7);
+    const h = size * (0.15 + rng() * 0.3);
+    ctx.fillStyle = colors[Math.floor(rng() * colors.length)];
     ctx.save();
-    ctx.translate(pt.x, pt.y);
+    ctx.translate(x, y);
     ctx.rotate(angle);
-    const sides = 3 + Math.floor(pt.rng2 * 4);
+    const sides = 3 + Math.floor(rng() * 4);
     ctx.beginPath();
     for (let s = 0; s < sides; s++) {
       const a = s / sides * Math.PI * 2;
-      const rv = (s % 2 === 0 ? w : h) * (0.7 + rng() * 0.3);
-      const px = Math.cos(a) * rv;
-      const py = Math.sin(a) * rv;
+      const r = (s % 2 === 0 ? w : h) * (0.7 + rng() * 0.3);
+      const px = Math.cos(a) * r;
+      const py = Math.sin(a) * r;
       if (s === 0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
     }
@@ -32047,24 +31497,27 @@ function renderClassic2(ctx, diagonal, size, density, color1, color2, color3) {
 function renderBold(ctx, diagonal, size, density, color1, color2, color3) {
   ctx.fillStyle = "#f5f5f5";
   ctx.fillRect(-diagonal, -diagonal, diagonal * 2, diagonal * 2);
-  const points = jitteredGrid2(diagonal, density * 0.6, 137, size * 2.5);
+  const area = diagonal * 2 * (diagonal * 2);
+  const count = Math.floor(area / 1e4 * density * 0.6);
+  const rng = seededRandom2(137);
   const colors = [color1, color2, color3];
-  const rng = seededRandom(137);
-  for (const pt of points) {
-    const angle = pt.rng1 * Math.PI * 2;
-    const w = size * (0.8 + pt.rng2 * 1.2);
-    const h = size * (0.4 + pt.rng3 * 0.6);
-    ctx.fillStyle = colors[Math.floor(pt.rng1 * colors.length)];
+  for (let i = 0; i < count; i++) {
+    const x = -diagonal + rng() * diagonal * 2;
+    const y = -diagonal + rng() * diagonal * 2;
+    const angle = rng() * Math.PI * 2;
+    const w = size * (0.8 + rng() * 1.2);
+    const h = size * (0.4 + rng() * 0.6);
+    ctx.fillStyle = colors[Math.floor(rng() * colors.length)];
     ctx.save();
-    ctx.translate(pt.x, pt.y);
+    ctx.translate(x, y);
     ctx.rotate(angle);
-    const sides = 4 + Math.floor(pt.rng2 * 3);
+    const sides = 4 + Math.floor(rng() * 3);
     ctx.beginPath();
     for (let s = 0; s < sides; s++) {
       const a = s / sides * Math.PI * 2;
-      const rv = (s % 2 === 0 ? w : h) * (0.6 + rng() * 0.4);
-      const px = Math.cos(a) * rv;
-      const py = Math.sin(a) * rv;
+      const r = (s % 2 === 0 ? w : h) * (0.6 + rng() * 0.4);
+      const px = Math.cos(a) * r;
+      const py = Math.sin(a) * r;
       if (s === 0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
     }
@@ -32076,13 +31529,17 @@ function renderBold(ctx, diagonal, size, density, color1, color2, color3) {
 function renderBlob(ctx, diagonal, size, density, color1, color2, _color3) {
   ctx.fillStyle = color2;
   ctx.fillRect(-diagonal, -diagonal, diagonal * 2, diagonal * 2);
-  const points = jitteredGrid2(diagonal, density, 256, size * 2);
-  for (const pt of points) {
-    const r = size * (0.3 + pt.rng1 * 0.7);
+  const area = diagonal * 2 * (diagonal * 2);
+  const count = Math.floor(area / 1e4 * density);
+  const rng = seededRandom2(256);
+  for (let i = 0; i < count; i++) {
+    const x = -diagonal + rng() * diagonal * 2;
+    const y = -diagonal + rng() * diagonal * 2;
+    const r = size * (0.3 + rng() * 0.7);
     ctx.fillStyle = color1;
-    ctx.globalAlpha = 0.3 + pt.rng2 * 0.5;
+    ctx.globalAlpha = 0.3 + rng() * 0.5;
     ctx.beginPath();
-    ctx.ellipse(pt.x, pt.y, r, r * (0.5 + pt.rng3 * 0.5), pt.rng1 * Math.PI, 0, Math.PI * 2);
+    ctx.ellipse(x, y, r, r * (0.5 + rng() * 0.5), rng() * Math.PI, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
   }
@@ -34902,7 +34359,7 @@ var patternMcpTools = [
 var patternsPlugin = {
   id: "patterns",
   name: "Patterns",
-  version: "0.2.1",
+  version: "0.2.0",
   tier: "free",
   description: "Geometric pattern fills and decorative tiling: hatch, crosshatch, stipple, stripe, dot, checker, wave, herringbone, tile, triangle, diamond, hexagon, star, circle, japanese, lattice, plaid, cube, leaf, floral, memphis, eye, spiral, terrazzo, square, octagon, scale, chainlink, ethnic, and custom patterns.",
   layerTypes: [
