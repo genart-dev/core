@@ -1,6 +1,6 @@
 {
   "name": "@genart-dev/core",
-  "version": "0.6.5",
+  "version": "0.6.7",
   "description": "Renderer adapters, skill registry, and runtime interfaces for genart.dev",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -52,6 +52,7 @@
     "generate:compositor": "tsx scripts/generate-compositor.ts",
     "prebuild": "npm run generate:compositor",
     "build": "tsup",
+    "postbuild": "node -e \"const fs=require('fs'); const f='dist/index.d.ts'; if(!fs.existsSync(f)){console.error('ERROR: '+f+' missing — publish would break downstream builds'); process.exit(1)} console.log('Verified: DTS files present')\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "clean": "rm -rf dist",
@@ -59,7 +60,7 @@
   },
   "dependencies": {
     "@genart-dev/components": "^0.1.0",
-    "@genart-dev/format": "^0.5.0"
+    "@genart-dev/format": "^0.5.3"
   },
   "peerDependencies": {
     "esbuild": ">=0.17.0"
@@ -73,6 +74,7 @@
     "@types/node": "^25.3.0",
     "esbuild": "^0.27.3",
     "tsup": "^8.3.6",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   }
