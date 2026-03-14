@@ -314,7 +314,11 @@ export class P5RendererAdapter implements RendererAdapter {
           __origSetup.call(p);
           setTimeout(function() {
             var c = document.querySelector('#canvas-container canvas');
-            if (c && window.__genart_compositeLayers) window.__genart_compositeLayers(c);
+            if (c && window.__genart_compositeLayers) {
+              window.__genart_compositeLayers(c);
+            } else if (c) {
+              console.warn('[genart] __genart_compositeLayers not defined — design layers will not render');
+            }
           }, 0);
         };
       }

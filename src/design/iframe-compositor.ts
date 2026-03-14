@@ -553,7 +553,10 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
       var alt = parts[0].replace(/s$/, "") + ":" + parts.slice(1).join(":");
       render = RENDERERS[alt];
     }
-    if (!render) return;
+    if (!render) {
+      console.warn('[genart compositor] No renderer for layer type "' + layer.type + '"');
+      return;
+    }
 
     var t = layer.transform;
     var w = Math.ceil(t.width);
@@ -655,7 +658,8 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
   }
 
   window.__genart_compositeLayers = function(canvas) {
-    if (!canvas || !__genart_layers || __genart_layers.length === 0) return;
+    if (!canvas) { console.warn('[genart compositor] No canvas element found'); return; }
+    if (!__genart_layers || __genart_layers.length === 0) return;
     var ctx = canvas.getContext("2d");
     if (!ctx) return;
     // Save the current transform (e.g. p5 pixelDensity scale) so we can restore it
@@ -729,6 +733,8 @@ export function generateCompositorCall(): string {
       if (window.__genart_compositeLayers) {
         var __c = document.getElementById('canvas') || document.querySelector('canvas');
         if (__c) window.__genart_compositeLayers(__c);
+      } else {
+        console.warn('[genart] __genart_compositeLayers not defined — design layers will not render');
       }`;
 }
 
