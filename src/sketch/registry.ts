@@ -5,6 +5,7 @@ import { Canvas2DRendererAdapter } from "./adapters/canvas2d.js";
 import { ThreeRendererAdapter } from "./adapters/three.js";
 import { GLSLRendererAdapter } from "./adapters/glsl.js";
 import { SVGRendererAdapter } from "./adapters/svg.js";
+import { GenArtRendererAdapter } from "./adapters/genart.js";
 
 /**
  * Registry for renderer adapters. Manages registration and lookup
@@ -62,7 +63,7 @@ export class RendererRegistry {
 }
 
 /**
- * Create a RendererRegistry pre-loaded with all 5 renderer adapters.
+ * Create a RendererRegistry pre-loaded with all renderer adapters.
  * This is the standard way to get a registry instance.
  */
 export function createDefaultRegistry(): RendererRegistry {
@@ -72,5 +73,6 @@ export function createDefaultRegistry(): RendererRegistry {
   registry.register(new ThreeRendererAdapter());
   registry.register(new GLSLRendererAdapter());
   registry.register(new SVGRendererAdapter());
+  registry.register(new GenArtRendererAdapter());
   return registry;
 }
