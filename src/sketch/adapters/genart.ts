@@ -11,6 +11,7 @@ import type {
   ValidationResult,
   CompiledAlgorithm,
   SketchInstance,
+  WatchCallback,
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
@@ -133,6 +134,11 @@ export class GenArtRendererAdapter implements RendererAdapter {
     let frameCount = 0;
     let startTime = 0;
     let mouseX = 0, mouseY = 0, mouseDown = false, pmouseX = 0, pmouseY = 0;
+    let watchCb: WatchCallback | undefined;
+    // Stable wrapper — never changes reference so re-evals don't need to update scope.
+    // Codegen emits `if (typeof __watch__ !== "undefined") __watch__(...)`, so this always fires;
+    // the inner guard keeps it a no-op until a callback is registered.
+    const stableWatch: WatchCallback = (label, value) => { watchCb?.(label, value); };
 
     function buildScope(ctx2d: CanvasRenderingContext2D): Record<string, unknown> {
       const paramVals: Record<string, number> = {};
@@ -155,8 +161,8 @@ export class GenArtRendererAdapter implements RendererAdapter {
         ctx: ctx2d,
         // Canvas element reference for compiled event handlers (on click:/drag:/key:)
         __canvas__: canvasEl,
-        // Watch callback — undefined by default; codegen guards with typeof check
-        __watch__: undefined as unknown,
+        // Watch callback — stable wrapper delegates to current watchCb (set via setWatchCallback)
+        __watch__: stableWatch,
       };
     }
 
@@ -273,6 +279,8 @@ export class GenArtRendererAdapter implements RendererAdapter {
       },
 
       dispose() { instance.unmount(); },
+
+      setWatchCallback(cb: WatchCallback | undefined) { watchCb = cb; },
     };
 
     return instance;

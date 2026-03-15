@@ -123,6 +123,9 @@ export interface RendererAdapter {
   getRuntimeDependencies(): RuntimeDependency[];
 }
 
+/** Callback for `watch "label" value` statements in GenArt Script. */
+export type WatchCallback = (label: string, value: unknown) => void;
+
 /**
  * A live sketch instance mounted in the DOM.
  * Created by RendererAdapter.createInstance().
@@ -148,4 +151,11 @@ export interface SketchInstance {
   captureImageData(): Promise<ImageData>;
   /** Dispose all resources (WebGL contexts, event listeners, etc.). */
   dispose(): void;
+  /**
+   * Register a callback for `watch "label" value` statements.
+   * Called each frame (or on each watch execution) with the label and current value.
+   * Pass `undefined` to remove the callback.
+   * Optional — only implemented by renderers that support watch (GenArt Script).
+   */
+  setWatchCallback?(cb: WatchCallback | undefined): void;
 }
