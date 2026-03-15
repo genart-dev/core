@@ -19,11 +19,19 @@ import type {
 // Internal types
 // ---------------------------------------------------------------------------
 
+type BuildGlobalsFn = (
+  ctx: CanvasRenderingContext2D,
+  params: Record<string, number>,
+  colors: Record<string, string>,
+  seed: number,
+) => Record<string, unknown>;
+
 interface GenArtCompiledAlgorithm {
   source: string;
   code: string;
   params: Array<{ key: string; label: string; min: number; max: number; step: number; default: number }>;
   colors: Array<{ key: string; label: string; default: string }>;
+  buildGlobals: BuildGlobalsFn;
 }
 
 interface CompiledExports {
@@ -69,7 +77,10 @@ export class GenArtRendererAdapter implements RendererAdapter {
   }
 
   async compile(algorithm: string): Promise<CompiledAlgorithm> {
-    const { compile } = await import("@genart-dev/genart-script");
+    const [{ compile }, { buildGlobals }] = await Promise.all([
+      import("@genart-dev/genart-script"),
+      import("@genart-dev/genart-script/runtime"),
+    ]);
     const result = compile(algorithm);
 
     if (!result.ok) {
@@ -84,6 +95,7 @@ export class GenArtRendererAdapter implements RendererAdapter {
       code: result.code,
       params: result.params,
       colors: result.colors,
+      buildGlobals: buildGlobals as unknown as BuildGlobalsFn,
     };
     return compiled as unknown as CompiledAlgorithm;
   }
@@ -108,7 +120,7 @@ export class GenArtRendererAdapter implements RendererAdapter {
     state: SketchState,
     canvas: CanvasSpec,
   ): SketchInstance {
-    const { code, params, colors } = compiled as unknown as GenArtCompiledAlgorithm;
+    const { code, params, colors, buildGlobals } = compiled as unknown as GenArtCompiledAlgorithm;
     const density = canvas.pixelDensity ?? 1;
 
     let canvasEl: HTMLCanvasElement | null = null;
@@ -122,27 +134,6 @@ export class GenArtRendererAdapter implements RendererAdapter {
     let startTime = 0;
     let mouseX = 0, mouseY = 0, mouseDown = false, pmouseX = 0, pmouseY = 0;
 
-    // Inline PRNG (mulberry32) — seeded per state.seed
-    let _seed = (state.seed ?? 42) >>> 0;
-    function prngSeed(_ns: string | null, value: number) { _seed = value >>> 0; }
-    function rnd(a: number, b?: number): number {
-      _seed = (_seed + 0x6d2b79f5) >>> 0;
-      let t = Math.imul(_seed ^ (_seed >>> 15), 1 | _seed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) >>> 0;
-      const r = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      return b === undefined ? r * a : a + r * (b - a);
-    }
-
-    // Inline value noise (full Perlin comes via runtime package in Phase 2)
-    function noiseImpl(x: number, _y?: number, _z?: number): number {
-      const i = Math.floor(x);
-      const f = x - i;
-      const u = f * f * (3 - 2 * f);
-      const a = ((Math.sin(i * 127.1 + 311.7) * 43758.5453123) % 1 + 1) % 1;
-      const b2 = ((Math.sin((i + 1) * 127.1 + 311.7) * 43758.5453123) % 1 + 1) % 1;
-      return (a + u * (b2 - a)) * 2 - 1;
-    }
-
     function buildScope(ctx2d: CanvasRenderingContext2D): Record<string, unknown> {
       const paramVals: Record<string, number> = {};
       for (const p of params) paramVals[p.key] = currentState.params[p.key] ?? p.default;
@@ -153,35 +144,19 @@ export class GenArtRendererAdapter implements RendererAdapter {
         colorVals[c.key] = currentState.colorPalette[i] ?? c.default;
       }
 
-      const w = canvas.width;
-      const h = canvas.height;
-
+      const globals = buildGlobals(ctx2d, paramVals, colorVals, currentState.seed ?? 42);
       return {
-        __params__: paramVals,
-        __colors__: colorVals,
+        ...globals,
+        // Override w/h with logical dimensions — canvas element is scaled by pixelDensity
+        w: canvas.width,
+        h: canvas.height,
+        // Top-level ctx alias (codegen wraps drawing in __once__/__frame__ fns that rebind ctx,
+        // but top-level expressions may reference it directly)
         ctx: ctx2d,
-        w, h,
-        PI: Math.PI, TWO_PI: Math.PI * 2, HALF_PI: Math.PI / 2,
-        sin: Math.sin, cos: Math.cos, tan: Math.tan, atan2: Math.atan2,
-        sqrt: Math.sqrt, abs: Math.abs, floor: Math.floor, ceil: Math.ceil,
-        round: Math.round, min: Math.min, max: Math.max, pow: Math.pow,
-        log: Math.log, exp: Math.exp,
-        lerp: (a: number, b: number, t: number) => a + (b - a) * t,
-        clamp: (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v)),
-        map: (v: number, il: number, ih: number, ol: number, oh: number) =>
-          ol + ((v - il) / (ih - il)) * (oh - ol),
-        dist: (x1: number, y1: number, x2: number, y2: number) =>
-          Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2),
-        __colorAlpha__: colorAlphaInline,
-        __linearGradient__: (angle: number, stops: string[]) =>
-          linearGradientInline(ctx2d, angle, stops),
-        __radialGradient__: (cx: number, cy: number, stops: string[]) =>
-          radialGradientInline(ctx2d, cx, cy, stops, w, h),
-        rnd,
-        rndInt: (a: number, b?: number) => Math.floor(rnd(a, b)),
-        noise: noiseImpl,
-        __rnd__: { seed: prngSeed },
+        // Canvas element reference for compiled event handlers (on click:/drag:/key:)
         __canvas__: canvasEl,
+        // Watch callback — undefined by default; codegen guards with typeof check
+        __watch__: undefined as unknown,
       };
     }
 
@@ -239,7 +214,6 @@ export class GenArtRendererAdapter implements RendererAdapter {
         canvasEl.addEventListener("pointerdown", () => { mouseDown = true; });
         canvasEl.addEventListener("pointerup", () => { mouseDown = false; });
 
-        _seed = (currentState.seed ?? 42) >>> 0;
         exports = evalCode(ctx);
         if (exports.once) exports.once(ctx);
 
@@ -259,7 +233,6 @@ export class GenArtRendererAdapter implements RendererAdapter {
 
       updateState(newState: SketchState) {
         currentState = { ...newState };
-        _seed = (newState.seed ?? 42) >>> 0;
         if (ctx) {
           exports = evalCode(ctx);
           if (exports.once) exports.once(ctx);
@@ -412,71 +385,4 @@ if (exports.isAnimated) {
       },
     ];
   }
-}
-
-// ---------------------------------------------------------------------------
-// Inline color helpers
-// ---------------------------------------------------------------------------
-
-function colorAlphaInline(color: string, alpha: number): string {
-  const rgb = hexToRgb(color);
-  if (rgb) return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha})`;
-  return color;
-}
-
-function linearGradientInline(
-  ctx: CanvasRenderingContext2D,
-  angleDeg: number,
-  stops: string[],
-): CanvasGradient {
-  const rad = (angleDeg * Math.PI) / 180;
-  const w = ctx.canvas.width, h = ctx.canvas.height;
-  const g = ctx.createLinearGradient(
-    w / 2 - (Math.cos(rad) * w) / 2, h / 2 - (Math.sin(rad) * h) / 2,
-    w / 2 + (Math.cos(rad) * w) / 2, h / 2 + (Math.sin(rad) * h) / 2,
-  );
-  stops.forEach((c, i) => g.addColorStop(i / (stops.length - 1), c));
-  return g;
-}
-
-function radialGradientInline(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  stops: string[],
-  w: number,
-  h: number,
-): CanvasGradient {
-  const r = Math.min(w, h) / 2;
-  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-  stops.forEach((c, i) => g.addColorStop(i / (stops.length - 1), c));
-  return g;
-}
-
-const NAMED_HEX: Record<string, string> = {
-  red: "ff0000", green: "008000", blue: "0000ff", white: "ffffff",
-  black: "000000", gray: "808080", grey: "808080", yellow: "ffff00",
-  orange: "ffa500", purple: "800080", pink: "ffc0cb", cyan: "00ffff",
-  magenta: "ff00ff", coral: "ff7f50", salmon: "fa8072", gold: "ffd700",
-  silver: "c0c0c0", teal: "008080", navy: "000080", maroon: "800000",
-  olive: "808000", lime: "00ff00", aqua: "00ffff", fuchsia: "ff00ff",
-  indigo: "4b0082", violet: "ee82ee", crimson: "dc143c",
-  turquoise: "40e0d0", beige: "f5f5dc", ivory: "fffff0", khaki: "f0e68c",
-  lavender: "e6e6fa", linen: "faf0e6", tan: "d2b48c", wheat: "f5deb3",
-};
-
-function hexToRgb(color: string): [number, number, number] | null {
-  const h = color.startsWith("#") ? color.slice(1) : NAMED_HEX[color.toLowerCase()];
-  if (!h) return null;
-  if (h.length === 3) return [
-    parseInt(h[0]! + h[0]!, 16),
-    parseInt(h[1]! + h[1]!, 16),
-    parseInt(h[2]! + h[2]!, 16),
-  ];
-  if (h.length === 6) return [
-    parseInt(h.slice(0, 2), 16),
-    parseInt(h.slice(2, 4), 16),
-    parseInt(h.slice(4, 6), 16),
-  ];
-  return null;
 }
