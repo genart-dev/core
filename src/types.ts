@@ -93,7 +93,7 @@ export interface RendererAdapter {
   /** Human-readable renderer name. */
   readonly displayName: string;
   /** Language used for the algorithm field. */
-  readonly algorithmLanguage: "javascript" | "glsl" | "typescript";
+  readonly algorithmLanguage: "javascript" | "glsl" | "typescript" | "genart-script";
 
   /** Validate algorithm source without executing it. */
   validate(algorithm: string): ValidationResult;
