@@ -221,12 +221,17 @@ export class GenArtRendererAdapter implements RendererAdapter {
         canvasEl.addEventListener("pointerup", () => { mouseDown = false; });
 
         exports = evalCode(ctx);
-        if (exports.once) exports.once(ctx);
 
-        if (exports.isAnimated) {
-          startLoop();
+        // `once` may be async (when script uses `await loadFont(...)`)
+        function startAfterOnce() {
+          if (exports!.isAnimated) startLoop(); else runStatic();
+        }
+        if (exports.once) {
+          const result: unknown = exports.once(ctx);
+          if (result instanceof Promise) { result.then(startAfterOnce).catch(console.error); }
+          else startAfterOnce();
         } else {
-          runStatic();
+          startAfterOnce();
         }
       },
 
