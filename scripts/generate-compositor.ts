@@ -68,6 +68,7 @@ const PLUGIN_DIRS = [
   "plugin-patterns",
   "plugin-terrain",
   "plugin-particles",
+  "plugin-atmosphere",
 ];
 
 // ---------------------------------------------------------------------------
