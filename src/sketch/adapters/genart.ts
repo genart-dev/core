@@ -440,38 +440,38 @@ function distort(type,amt,q){type=type||"wave";amt=amt||10;if(__resolveQ__(q)===
 function dither(str){str=str||0.5;var cw=canvas.width,ch=canvas.height;var id=ctx.getImageData(0,0,cw,ch);var d=id.data;var b=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];var sc=str*32;for(var y=0;y<ch;y++)for(var x=0;x<cw;x++){var i=(y*cw+x)*4;var th=(b[(y%4)*4+(x%4)]/16-0.5)*sc;d[i]=Math.min(255,Math.max(0,d[i]+th));d[i+1]=Math.min(255,Math.max(0,d[i+1]+th));d[i+2]=Math.min(255,Math.max(0,d[i+2]+th));}ctx.putImageData(id,0,0);}
 function halftone(ds,ang){ds=ds||4;ang=ang||0.3;var cw=canvas.width,ch=canvas.height;var id=ctx.getImageData(0,0,cw,ch);var s=id.data;ds=Math.max(2,Math.round(ds));ctx.clearRect(0,0,w,h);ctx.save();ctx.fillStyle="white";ctx.fillRect(0,0,w,h);var ca=Math.cos(ang),sa=Math.sin(ang);for(var y=0;y<ch;y+=ds)for(var x=0;x<cw;x+=ds){var cx2=Math.min(x+Math.floor(ds/2),cw-1),cy2=Math.min(y+Math.floor(ds/2),ch-1);var si2=(cy2*cw+cx2)*4;var lum=(s[si2]*0.299+s[si2+1]*0.587+s[si2+2]*0.114)/255;var r=(1-lum)*ds*0.5;if(r<0.5)continue;var px=x+ds/2,py=y+ds/2;var rx=px*ca-py*sa+w/2*(1-ca)+h/2*sa;var ry=px*sa+py*ca+h/2*(1-ca)-w/2*sa;ctx.beginPath();ctx.arc(rx,ry,r,0,Math.PI*2);ctx.fillStyle="rgb("+s[si2]+","+s[si2+1]+","+s[si2+2]+")";ctx.fill();}ctx.restore();}
 
-var globals = { ctx:ctx, w:w, h:h, __params__:paramVals, __colors__:colorVals,
-  PI:Math.PI, TWO_PI:Math.PI*2, HALF_PI:Math.PI/2,
-  sin:Math.sin, cos:Math.cos, tan:Math.tan, atan2:Math.atan2,
-  sqrt:Math.sqrt, abs:Math.abs, floor:Math.floor, ceil:Math.ceil,
-  round:Math.round, min:Math.min, max:Math.max, pow:Math.pow, log:Math.log, exp:Math.exp,
-  lerp:function(a,b,t){return a+(b-a)*t;}, clamp:function(v,lo,hi){return Math.max(lo,Math.min(hi,v));},
-  map:function(v,il,ih,ol,oh){return ol+((v-il)/(ih-il))*(oh-ol);},
-  dist:function(x1,y1,x2,y2){return Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));},
-  __colorAlpha__:__colorAlpha__, __linearGradient__:__linearGradient__, __radialGradient__:__radialGradient__,
-  rnd:function(a,b){return b===undefined?Math.random()*a:a+Math.random()*(b-a);},
-  rndInt:function(a,b){return Math.floor(b===undefined?Math.random()*a:a+Math.random()*(b-a));},
-  noise:noise,
-  __rnd__:{seed:function(){}}, __canvas__:canvas, __renderCtx__:__renderCtx__,
-  vignette:vignette, grain:grain, bloom:bloom, grade:grade, blur:blur,
-  scanlines:scanlines, pixelate:pixelate, chromatic_aberration:chromatic_aberration,
-  distort:distort, dither:dither, halftone:halftone,
-};
-var code = ${JSON.stringify(compiledCode)};
-var fn = new Function(Object.keys(globals).join(","), code + "\\nreturn __exports__;");
-var exports = fn.apply(null, Object.keys(globals).map(function(k){return globals[k];}));
-if (exports.once) exports.once(ctx);
-if (exports.isAnimated) {
-  var t0 = performance.now();
-  var frame = 0;
-  function loop() {
-    try { exports.frame(ctx, (performance.now()-t0)/1000, frame++, w, h, 60, 0,0,false,0,0, 0,0,[],null); } catch(e) { console.error("[genart]",e); }
-    try { if (exports.post) exports.post(ctx, "animated"); } catch(e) { console.error("[genart post]",e); }
+// Globals — declared as local vars so compiled code can reference them directly
+var __params__ = paramVals, __colors__ = colorVals;
+var PI = Math.PI, TWO_PI = Math.PI*2, HALF_PI = Math.PI/2;
+var sin = Math.sin, cos = Math.cos, tan = Math.tan, atan2 = Math.atan2;
+var sqrt = Math.sqrt, abs = Math.abs, floor = Math.floor, ceil = Math.ceil;
+var round = Math.round, min = Math.min, max = Math.max, pow = Math.pow, log = Math.log, exp = Math.exp;
+function lerp(a,b,t){return a+(b-a)*t;} function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
+function map(v,il,ih,ol,oh){return ol+((v-il)/(ih-il))*(oh-ol);}
+function dist(x1,y1,x2,y2){return Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));}
+function rnd(a,b){return b===undefined?Math.random()*a:a+Math.random()*(b-a);}
+function rndInt(a,b){return Math.floor(b===undefined?Math.random()*a:a+Math.random()*(b-a));}
+var __rnd__ = {seed:function(){}};
+var __canvas__ = canvas;
+
+// --- compiled code (inlined, no eval/new Function) ---
+${compiledCode}
+
+// --- run ---
+if (typeof __exports__ !== "undefined") {
+  if (__exports__.once) __exports__.once(ctx);
+  if (__exports__.isAnimated) {
+    var t0 = performance.now();
+    var frame = 0;
+    function loop() {
+      try { __exports__.frame(ctx, (performance.now()-t0)/1000, frame++, w, h, 60, 0,0,false,0,0, 0,0,[],null); } catch(e) { console.error("[genart]",e); }
+      try { if (__exports__.post) __exports__.post(ctx, "animated"); } catch(e) { console.error("[genart post]",e); }
+      requestAnimationFrame(loop);
+    }
     requestAnimationFrame(loop);
+  } else {
+    try { if (__exports__.post) __exports__.post(ctx, "static"); } catch(e) { console.error("[genart post]",e); }
   }
-  requestAnimationFrame(loop);
-} else {
-  try { if (exports.post) exports.post(ctx, "static"); } catch(e) { console.error("[genart post]",e); }
 }
 })();
 </script>
