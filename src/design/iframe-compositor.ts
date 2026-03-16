@@ -12,7 +12,7 @@
  */
 
 import type { DesignLayer } from "@genart-dev/format";
-import { GENERATED_RENDERERS_CODE } from "./generated-renderers.js";
+import { GENERATED_RENDERERS_CODE } from "./generated-renderers/index.js";
 
 /**
  * Generate a self-contained `<script>` block that composites design layers

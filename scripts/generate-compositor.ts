@@ -2,15 +2,16 @@
  * ADR 059 — Compositor Code Generator
  *
  * Reads each plugin's dist/index.cjs bundle, wraps it in an IIFE to extract
- * render() functions for all layer types, and generates a dispatcher module
- * that the iframe compositor imports at build time.
+ * render() functions for all layer types, and generates per-plugin modules
+ * plus an index barrel that the iframe compositor imports at build time.
  *
  * Usage: npx tsx scripts/generate-compositor.ts
  *
- * Output: src/design/generated-renderers.ts
+ * Output: src/design/generated-renderers/<plugin-name>.ts  (one per plugin)
+ *         src/design/generated-renderers/index.ts           (barrel)
  */
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -24,7 +25,7 @@ const require = createRequire(import.meta.url);
 // ---------------------------------------------------------------------------
 
 const PLUGINS_DIR = resolve(__dirname, "../../");
-const OUTPUT_FILE = resolve(__dirname, "../src/design/generated-renderers.ts");
+const OUTPUT_DIR = resolve(__dirname, "../src/design/generated-renderers");
 
 /** Layer types already hardcoded in iframe-compositor.ts — skip these */
 const EXISTING_TYPES = new Set([
@@ -112,14 +113,6 @@ function extractLayerTypes(pluginDir: string): ExtractedRenderer[] {
 // ---------------------------------------------------------------------------
 
 /**
- * For each plugin that has new layer types, we wrap its entire CJS bundle
- * in an IIFE and extract the render functions by typeId. This preserves all
- * module-scoped helpers that render() depends on.
- *
- * The generated output is a plain JS string (embedded in a TS template literal)
- * that will be injected into the compositor's <script> block.
- */
-/**
  * Build a map of known inlineable CJS packages (id → exports object).
  * These are packages that render() functions legitimately depend on at runtime
  * in the browser compositor — i.e. not just Node/MCP utilities.
@@ -157,9 +150,7 @@ function generatePluginIIFE(pluginDir: string, typeIds: string[], inlineMap: Map
     }
   }
 
-  // Build inline dep variable declarations (each dep is serialised via JSON for primitives;
-  // for function-bearing objects we re-require() the already-loaded module at generation time
-  // and embed the CJS source as a nested inline module).
+  // Build inline dep variable declarations
   const depSetup = neededDeps
     .map(([id, varName]) => {
       const depCjs = resolve(PLUGINS_DIR, id.replace("@genart-dev/", ""), "dist/index.cjs");
@@ -178,9 +169,7 @@ function generatePluginIIFE(pluginDir: string, typeIds: string[], inlineMap: Map
   // Build the IIFE: execute the CJS module in a fake module scope,
   // then extract each layer type's render function by typeId.
   // NOTE: We pass RENDERERS as a parameter (__R) to avoid name collisions
-  // with `var RENDERERS` declarations inside plugin bundles (e.g. plugin-figure
-  // has `var RENDERERS = { stick: stickRenderer, ... }` which would shadow
-  // the compositor's RENDERERS if accessed via closure).
+  // with `var RENDERERS` declarations inside plugin bundles.
   const typeIdLookups = typeIds
     .map(
       (id) =>
@@ -212,8 +201,19 @@ function sanitize(typeId: string): string {
   return typeId.replace(/[^a-zA-Z0-9]/g, "_");
 }
 
+/** Convert plugin-dir-name to a valid TS identifier: plugin-terrain → pluginTerrain */
+function toIdentifier(pluginDir: string): string {
+  return pluginDir.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+function escapeTemplateLiteral(s: string): string {
+  return s.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+}
+
 function generate(): void {
-  console.log("ADR 059 — Generating compositor renderers...\n");
+  console.log("ADR 059 — Generating compositor renderers (per-plugin split)...\n");
+
+  mkdirSync(OUTPUT_DIR, { recursive: true });
 
   // Collect all new layer types grouped by plugin
   const pluginTypes = new Map<string, string[]>();
@@ -236,34 +236,45 @@ function generate(): void {
   // Build the inlineable require map (illustration, etc.)
   const inlineMap = buildInlineableRequireMap();
 
-  // Generate the IIFE blocks
-  const iifes: string[] = [];
+  // Generate one file per plugin
+  const pluginExports: Array<{ dir: string; identifier: string; typeCount: number }> = [];
+
   for (const [dir, ids] of pluginTypes) {
-    iifes.push(generatePluginIIFE(dir, ids, inlineMap));
+    const iife = generatePluginIIFE(dir, ids, inlineMap);
+    const identifier = toIdentifier(dir);
+    const fileName = `${dir}.ts`;
+
+    const content = `/** AUTO-GENERATED — DO NOT EDIT — ${ids.length} layer types from ${dir} */\nexport const ${identifier} = \`${escapeTemplateLiteral(iife)}\`;\n`;
+
+    writeFileSync(resolve(OUTPUT_DIR, fileName), content, "utf-8");
+    pluginExports.push({ dir, identifier, typeCount: ids.length });
+    console.log(`  Written: ${fileName} (${ids.length} types)`);
   }
 
-  const generatedCode = iifes.join("\n");
+  // Generate barrel index.ts
+  const imports = pluginExports
+    .map((p) => `import { ${p.identifier} } from "./${p.dir}.js";`)
+    .join("\n");
 
-  // Write the output as a TS module that exports the generated JS string
-  const output = `/**
+  const concat = pluginExports.map((p) => p.identifier).join("\n  + ");
+
+  const barrel = `/**
  * AUTO-GENERATED by scripts/generate-compositor.ts — DO NOT EDIT
  *
- * Contains IIFE-wrapped plugin bundles that register render() functions
- * for ${totalNew} layer types into the RENDERERS map.
+ * Barrel that concatenates per-plugin renderer code strings.
+ * ${totalNew} layer types from ${pluginExports.length} plugins.
  *
  * Generated: ${new Date().toISOString()}
  */
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const GENERATED_RENDERERS_CODE = \`${escapeTemplateLiteral(generatedCode)}\`;
+${imports}
+
+export const GENERATED_RENDERERS_CODE =
+  ${concat};
 `;
 
-  writeFileSync(OUTPUT_FILE, output, "utf-8");
-  console.log(`  Written to: ${OUTPUT_FILE}`);
-}
-
-function escapeTemplateLiteral(s: string): string {
-  return s.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+  writeFileSync(resolve(OUTPUT_DIR, "index.ts"), barrel, "utf-8");
+  console.log(`\n  Written: index.ts (barrel for ${pluginExports.length} plugins)`);
 }
 
 // ---------------------------------------------------------------------------

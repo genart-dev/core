@@ -1,6 +1,6 @@
 {
   "name": "@genart-dev/core",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "description": "Renderer adapters, skill registry, and runtime interfaces for genart.dev",
   "type": "module",
   "main": "./dist/index.cjs",
