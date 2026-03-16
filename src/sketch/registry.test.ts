@@ -55,7 +55,8 @@ describe("RendererRegistry", () => {
       expect(types).toContain("three");
       expect(types).toContain("glsl");
       expect(types).toContain("svg");
-      expect(types).toHaveLength(5);
+      expect(types).toContain("genart");
+      expect(types).toHaveLength(6);
     });
 
     it("returns empty array for empty registry", () => {
@@ -91,9 +92,9 @@ describe("RendererRegistry", () => {
 });
 
 describe("createDefaultRegistry", () => {
-  it("creates registry with all 5 renderer types", () => {
+  it("creates registry with all 6 renderer types", () => {
     const registry = createDefaultRegistry();
-    expect(registry.list()).toHaveLength(5);
+    expect(registry.list()).toHaveLength(6);
   });
 
   it("resolves p5 to P5RendererAdapter", () => {

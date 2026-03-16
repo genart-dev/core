@@ -532,6 +532,40 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
     return oc;
   }
 
+  // --- Layer masking (ADR 083) ---
+  // Mask source layers are rendered a second time into a canvas-sized offscreen
+  // (__maskStore). Masked layers render to a canvas-sized offscreen, apply the
+  // mask via destination-in/destination-out/luminosity, then blit to output.
+  // Modifier-path layers (painting:*, adjust:*, filter:*) cannot be masked.
+  var __maskSourceIds = null;  // Set<string> | null — reset per render pass
+  var __maskStore = {};        // Record<string, OffscreenCanvas> — keyed by layer.id
+  var __logW = 0;              // Logical canvas width — set by __renderLayers
+  var __logH = 0;              // Logical canvas height — set by __renderLayers
+
+  function __collectMaskSourceIds(layers) {
+    var ids = new Set();
+    for (var i = 0; i < layers.length; i++) {
+      if (layers[i].maskLayerId) ids.add(layers[i].maskLayerId);
+      if (layers[i].children) {
+        var childIds = __collectMaskSourceIds(layers[i].children);
+        childIds.forEach(function(id) { ids.add(id); });
+      }
+    }
+    return ids;
+  }
+
+  function __applyLuminosityMask(ctx, maskCanvas, w, h) {
+    var layerData = ctx.getImageData(0, 0, w, h);
+    var maskCtx = maskCanvas.getContext("2d");
+    var maskData = maskCtx.getImageData(0, 0, w, h);
+    for (var i = 0; i < layerData.data.length; i += 4) {
+      var r = maskData.data[i], g = maskData.data[i + 1], b = maskData.data[i + 2];
+      var lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      layerData.data[i + 3] = Math.round(layerData.data[i + 3] * lum);
+    }
+    ctx.putImageData(layerData, 0, 0);
+  }
+
   function compositeLayer(layer, ctx) {
     if (!layer.visible) return;
 
@@ -602,6 +636,47 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
       var localBounds = { x: 0, y: 0, width: w, height: h };
       render(layerCtx, layer.properties, localBounds);
 
+      // If this layer is a mask source, render it again in canvas-coordinate space
+      // into __maskStore so masked layers can reference it.
+      var isMaskSource = __maskSourceIds && __maskSourceIds.has(layer.id);
+      if (isMaskSource && __logW > 0 && __logH > 0) {
+        var maskOff = new OffscreenCanvas(__logW, __logH);
+        var maskOffCtx = maskOff.getContext("2d");
+        var maskSrcBounds = { x: t.x, y: t.y, width: w, height: h };
+        render(maskOffCtx, layer.properties, maskSrcBounds);
+        __maskStore[layer.id] = maskOff;
+      }
+
+      // If this layer references a mask source, render it to a canvas-sized
+      // offscreen, apply the mask, then blit to output instead of normal path.
+      var maskLayerId = layer.maskLayerId;
+      var maskCanvas = (maskLayerId && maskLayerId !== layer.id) ? __maskStore[maskLayerId] : null;
+      if (maskCanvas) {
+        var maskedOff = new OffscreenCanvas(__logW, __logH);
+        var maskedCtx = maskedOff.getContext("2d");
+        var maskedBounds = { x: t.x, y: t.y, width: w, height: h };
+        render(maskedCtx, layer.properties, maskedBounds);
+
+        var mode = layer.maskMode || "alpha";
+        if (mode === "alpha") {
+          maskedCtx.globalCompositeOperation = "destination-in";
+          maskedCtx.drawImage(maskCanvas, 0, 0);
+        } else if (mode === "inverted-alpha") {
+          maskedCtx.globalCompositeOperation = "destination-out";
+          maskedCtx.drawImage(maskCanvas, 0, 0);
+        } else {
+          __applyLuminosityMask(maskedCtx, maskCanvas, __logW, __logH);
+        }
+        maskedCtx.globalCompositeOperation = "source-over";
+
+        ctx.save();
+        ctx.globalAlpha = layer.opacity;
+        ctx.globalCompositeOperation = toCompositeOp(layer.blendMode);
+        ctx.drawImage(maskedOff, 0, 0);
+        ctx.restore();
+        return;
+      }
+
       ctx.save();
       ctx.globalAlpha = layer.opacity;
       ctx.globalCompositeOperation = toCompositeOp(layer.blendMode);
@@ -638,6 +713,13 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
       var lt = __genart_layers[i].transform;
       if (lt.width > 0 && lt.height > 0) { logW = lt.width; logH = lt.height; break; }
     }
+
+    // Pre-scan for mask sources and reset mask store each render pass
+    __logW = logW;
+    __logH = logH;
+    __maskSourceIds = __collectMaskSourceIds(__genart_layers);
+    __maskStore = {};
+
     if (canvas.width !== logW || canvas.height !== logH) {
       if (!__dprOffscreen || __dprOffscreen.width !== logW || __dprOffscreen.height !== logH) {
         __dprOffscreen = new OffscreenCanvas(logW, logH);
@@ -692,6 +774,10 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
     var oc = new OffscreenCanvas(width, height);
     var ctx = oc.getContext("2d");
     if (!ctx) return null;
+    __logW = width;
+    __logH = height;
+    __maskSourceIds = __collectMaskSourceIds(__genart_layers);
+    __maskStore = {};
     for (var i = 0; i < __genart_layers.length; i++) {
       compositeLayer(__genart_layers[i], ctx);
     }

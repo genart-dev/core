@@ -1,4 +1,4 @@
-import type { DesignLayer, BlendMode, LayerTransform } from "@genart-dev/format";
+import type { DesignLayer, BlendMode, MaskMode, LayerTransform } from "@genart-dev/format";
 
 /** JSON Schema (subset used for MCP tool input schemas). */
 export type JsonSchema = Record<string, unknown>;
@@ -309,6 +309,8 @@ export interface MutableDesignLayer {
   transform: LayerTransform;
   properties: LayerProperties;
   children?: MutableDesignLayer[];
+  maskLayerId?: string;
+  maskMode?: MaskMode;
 }
 
 // ---------------------------------------------------------------------------
@@ -338,6 +340,10 @@ export interface LayerStackAccessor {
     layerId: string,
     fields: { visible?: boolean; locked?: boolean; name?: string },
   ): void;
+  /** Set a mask on a layer. maskMode defaults to 'alpha' if omitted. */
+  setMask(layerId: string, maskLayerId: string, maskMode?: MaskMode): void;
+  /** Remove the mask from a layer. */
+  clearMask(layerId: string): void;
   reorder(layerId: string, newIndex: number): void;
   duplicate(layerId: string): string;
   readonly count: number;

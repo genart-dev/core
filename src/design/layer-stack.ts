@@ -1,4 +1,4 @@
-import type { DesignLayer, BlendMode, LayerTransform } from "@genart-dev/format";
+import type { DesignLayer, BlendMode, MaskMode, LayerTransform } from "@genart-dev/format";
 import type {
   LayerStackAccessor,
   LayerProperties,
@@ -28,6 +28,10 @@ function toMutable(layer: DesignLayer): MutableDesignLayer {
     blendMode: layer.blendMode,
     transform: { ...layer.transform },
     properties: { ...layer.properties } as LayerProperties,
+    ...(layer.maskLayerId !== undefined && {
+      maskLayerId: layer.maskLayerId,
+      maskMode: layer.maskMode,
+    }),
   };
   if (layer.children) {
     mutable.children = layer.children.map(toMutable);
@@ -47,6 +51,10 @@ function deepCloneLayer(layer: DesignLayer): MutableDesignLayer {
     blendMode: layer.blendMode,
     transform: { ...layer.transform },
     properties: { ...layer.properties } as LayerProperties,
+    ...(layer.maskLayerId !== undefined && {
+      maskLayerId: layer.maskLayerId,
+      maskMode: layer.maskMode,
+    }),
   };
   if (layer.children) {
     clone.children = layer.children.map(deepCloneLayer);
@@ -146,6 +154,22 @@ export function createLayerStack(
       if (fields.visible !== undefined) layer.visible = fields.visible;
       if (fields.locked !== undefined) layer.locked = fields.locked;
       if (fields.name !== undefined) layer.name = fields.name;
+      onChange("layer-updated");
+    },
+
+    setMask(layerId: string, maskLayerId: string, maskMode?: MaskMode): void {
+      const idx = findIndex(layerId);
+      const layer = layers[idx]!;
+      layer.maskLayerId = maskLayerId;
+      layer.maskMode = maskMode ?? "alpha";
+      onChange("layer-updated");
+    },
+
+    clearMask(layerId: string): void {
+      const idx = findIndex(layerId);
+      const layer = layers[idx]!;
+      delete layer.maskLayerId;
+      delete layer.maskMode;
       onChange("layer-updated");
     },
 

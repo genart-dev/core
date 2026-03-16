@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { compositeDesignLayers } from "./compositor.js";
 import type { DesignLayer } from "@genart-dev/format";
 import type {
@@ -6,6 +6,32 @@ import type {
   RenderResources,
   LayerTypeDefinition,
 } from "../types/design-plugin.js";
+
+// Minimal mock for an OffscreenCanvas context
+function mockOffCtx() {
+  return {
+    drawImage: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    rotate: vi.fn(),
+    scale: vi.fn(),
+    setTransform: vi.fn(),
+    getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(800 * 800 * 4) })),
+    putImageData: vi.fn(),
+    globalAlpha: 1,
+    globalCompositeOperation: "source-over" as string,
+  };
+}
+
+// Mock OffscreenCanvas for Node environment
+class MockOffscreenCanvas {
+  width: number;
+  height: number;
+  private _ctx = mockOffCtx();
+  constructor(w: number, h: number) { this.width = w; this.height = h; }
+  getContext(_type: string) { return this._ctx; }
+}
 
 // Minimal mock for CanvasRenderingContext2D
 function mockCtx(): CanvasRenderingContext2D {
@@ -18,6 +44,7 @@ function mockCtx(): CanvasRenderingContext2D {
     scale: vi.fn(),
     globalAlpha: 1,
     globalCompositeOperation: "source-over",
+    canvas: { width: 800, height: 800 },
   } as unknown as CanvasRenderingContext2D;
 }
 
@@ -234,5 +261,103 @@ describe("compositeDesignLayers", () => {
 
     // Only drawImage for the base layer, no render calls
     expect(ctx.drawImage).toHaveBeenCalledOnce();
+  });
+
+  describe("layer masking", () => {
+    // Install MockOffscreenCanvas before each mask test
+    beforeEach(() => {
+      vi.stubGlobal("OffscreenCanvas", MockOffscreenCanvas);
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    function makeLayerType(id = "test:shape"): LayerTypeDefinition {
+      return {
+        typeId: id,
+        displayName: id,
+        icon: "shape",
+        category: "shape",
+        properties: [],
+        createDefault: () => ({}),
+        render: vi.fn(),
+        validate: () => null,
+        propertyEditorId: `${id}-editor`,
+      };
+    }
+
+    it("renders mask source layer twice (once normally, once to maskStore)", () => {
+      const sourceType = makeLayerType("test:source");
+      const maskedType = makeLayerType("test:masked");
+      const registry: PluginRegistry = {
+        resolveLayerType: (id: string) =>
+          id === "test:source" ? sourceType : maskedType,
+      } as unknown as PluginRegistry;
+
+      const sourceLayer = makeLayer({ id: "src-1", type: "test:source" });
+      const maskedLayer = makeLayer({
+        id: "fog-1",
+        type: "test:masked",
+        maskLayerId: "src-1",
+        maskMode: "alpha",
+      });
+
+      compositeDesignLayers(mockCanvas(), [sourceLayer, maskedLayer], registry, mockResources(), mockCtx());
+
+      // Source rendered twice (normal + maskStore)
+      expect(sourceType.render).toHaveBeenCalledTimes(2);
+      // Masked layer rendered once (to offscreen)
+      expect(maskedType.render).toHaveBeenCalledOnce();
+    });
+
+    it("does not apply mask when maskLayerId is forward reference (source not yet rendered)", () => {
+      const sourceType = makeLayerType("test:source");
+      const maskedType = makeLayerType("test:masked");
+      const registry: PluginRegistry = {
+        resolveLayerType: (id: string) =>
+          id === "test:source" ? sourceType : maskedType,
+      } as unknown as PluginRegistry;
+
+      // Masked layer appears BEFORE source — forward ref, mask cannot be applied
+      const maskedLayer = makeLayer({
+        id: "fog-1",
+        type: "test:masked",
+        maskLayerId: "src-1",  // src-1 not yet rendered at time fog-1 is processed
+        maskMode: "alpha",
+      });
+      const sourceLayer = makeLayer({ id: "src-1", type: "test:source" });
+
+      const ctx = mockCtx();
+      expect(() =>
+        compositeDesignLayers(mockCanvas(), [maskedLayer, sourceLayer], registry, mockResources(), ctx),
+      ).not.toThrow();
+
+      // Masked layer falls through to direct path (no mask canvas available yet) — rendered once
+      expect(maskedType.render).toHaveBeenCalledOnce();
+      // Source layer is a mask source (pre-scan finds it) — rendered twice (normal + maskStore)
+      expect(sourceType.render).toHaveBeenCalledTimes(2);
+    });
+
+    it("guards against circular mask reference (layer masks itself)", () => {
+      const selfType = makeLayerType("test:self");
+      const registry: PluginRegistry = {
+        resolveLayerType: () => selfType,
+      } as unknown as PluginRegistry;
+
+      const selfLayer = makeLayer({
+        id: "self-1",
+        type: "test:self",
+        maskLayerId: "self-1",  // circular — guard: maskLayerId === layer.id
+        maskMode: "alpha",
+      });
+
+      const ctx = mockCtx();
+      // Should not throw; circular guard fires, falls to direct path
+      expect(() =>
+        compositeDesignLayers(mockCanvas(), [selfLayer], registry, mockResources(), ctx),
+      ).not.toThrow();
+      // Rendered twice: once to ctx (direct path), once to maskStore (it IS in maskSourceIds)
+      expect(selfType.render).toHaveBeenCalledTimes(2);
+    });
   });
 });
