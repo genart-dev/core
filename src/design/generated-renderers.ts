@@ -4,7 +4,7 @@
  * Contains IIFE-wrapped plugin bundles that register render() functions
  * for 113 layer types into the RENDERERS map.
  *
- * Generated: 2026-03-15T23:57:59.468Z
+ * Generated: 2026-03-16T01:03:04.135Z
  */
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -47250,17 +47250,21 @@ var FLOW_PRESETS = [
     category: "flow",
     description: "Pale grey smoke tendrils curling upward in slow lazy arcs",
     tags: ["smoke", "atmosphere", "grey", "gentle", "indoor"],
-    count: 60,
-    pathSteps: 80,
-    stepSize: 0.018,
-    noiseScale: 1.2,
+    // Many thin wisps drifting upward with curl turbulence
+    count: 1200,
+    pathSteps: 65,
+    stepSize: 0.012,
+    noiseScale: 1.4,
     noiseOctaves: 3,
-    sizeMin: 0.8,
-    sizeMax: 2.5,
+    sizeMin: 0.3,
+    sizeMax: 0.9,
     color: "#C8C8C8",
-    colorVariation: 0.08,
-    opacity: 0.55,
-    swirling: 0.15,
+    colorVariation: 0.1,
+    opacity: 0.4,
+    swirling: 0.22,
+    flowAngle: 270,
+    // upward (-Y in canvas)
+    flowStrength: 0.42,
     depthDistribution: "uniform",
     depthEasing: "linear",
     horizonY: 0.4
@@ -47271,17 +47275,20 @@ var FLOW_PRESETS = [
     category: "flow",
     description: "Dark ink ribbons spreading and curling through water \\u2014 abstract fluid motion",
     tags: ["ink", "water", "abstract", "dark", "dramatic"],
-    count: 40,
-    pathSteps: 100,
-    stepSize: 0.022,
-    noiseScale: 1.8,
+    // Pure curl, no bias — smooth organic tendrils spreading like ink in water
+    count: 550,
+    pathSteps: 95,
+    stepSize: 0.016,
+    noiseScale: 1.1,
     noiseOctaves: 4,
-    sizeMin: 1,
-    sizeMax: 3.5,
+    sizeMin: 0.7,
+    sizeMax: 2.5,
     color: "#1A1A2E",
-    colorVariation: 0.12,
-    opacity: 0.7,
-    swirling: 0.25,
+    colorVariation: 0.15,
+    opacity: 0.72,
+    swirling: 0.28,
+    flowAngle: 0,
+    flowStrength: 0,
     depthDistribution: "uniform",
     depthEasing: "quadratic",
     horizonY: 0.5
@@ -47292,17 +47299,21 @@ var FLOW_PRESETS = [
     category: "flow",
     description: "Luminous green-cyan ribbons flowing in long sweeping bands across a dark sky",
     tags: ["aurora", "night", "green", "magical", "sky"],
-    count: 25,
-    pathSteps: 140,
-    stepSize: 0.025,
-    noiseScale: 0.7,
+    // Broad horizontal sweeping bands with gentle vertical curl
+    count: 300,
+    pathSteps: 150,
+    stepSize: 0.022,
+    noiseScale: 0.5,
     noiseOctaves: 2,
-    sizeMin: 2,
-    sizeMax: 6,
+    sizeMin: 2.5,
+    sizeMax: 7,
     color: "#44FFAA",
-    colorVariation: 0.18,
-    opacity: 0.5,
-    swirling: 0.05,
+    colorVariation: 0.2,
+    opacity: 0.45,
+    swirling: 0.08,
+    flowAngle: 0,
+    // rightward
+    flowStrength: 0.55,
     depthDistribution: "background-heavy",
     depthEasing: "linear",
     horizonY: 0.2
@@ -47313,17 +47324,21 @@ var FLOW_PRESETS = [
     category: "flow",
     description: "Slow viscous orange-red rivers of molten rock winding across dark ground",
     tags: ["lava", "fire", "orange", "dramatic", "geological"],
-    count: 20,
-    pathSteps: 120,
-    stepSize: 0.015,
-    noiseScale: 0.9,
+    // Thick downward-flowing rivers with low turbulence
+    count: 250,
+    pathSteps: 130,
+    stepSize: 0.014,
+    noiseScale: 0.8,
     noiseOctaves: 3,
-    sizeMin: 3,
-    sizeMax: 8,
+    sizeMin: 3.5,
+    sizeMax: 9,
     color: "#FF4400",
     colorVariation: 0.2,
-    opacity: 0.8,
-    swirling: 0.1,
+    opacity: 0.85,
+    swirling: 0.06,
+    flowAngle: 90,
+    // downward
+    flowStrength: 0.35,
     depthDistribution: "foreground-heavy",
     depthEasing: "quadratic",
     horizonY: 0.6
@@ -47334,17 +47349,21 @@ var FLOW_PRESETS = [
     category: "flow",
     description: "Blue-white water flow lines tracing the movement of a shallow stream",
     tags: ["water", "river", "blue", "natural", "gentle"],
-    count: 80,
-    pathSteps: 90,
-    stepSize: 0.02,
-    noiseScale: 1.4,
+    // Many thin horizontal streamlines with light turbulence
+    count: 1100,
+    pathSteps: 100,
+    stepSize: 0.019,
+    noiseScale: 0.85,
     noiseOctaves: 3,
-    sizeMin: 0.5,
-    sizeMax: 1.8,
+    sizeMin: 0.3,
+    sizeMax: 1.2,
     color: "#80C8E8",
-    colorVariation: 0.1,
-    opacity: 0.45,
-    swirling: 0.08,
+    colorVariation: 0.12,
+    opacity: 0.5,
+    swirling: 0.05,
+    flowAngle: 0,
+    // rightward
+    flowStrength: 0.6,
     depthDistribution: "uniform",
     depthEasing: "linear",
     horizonY: 0.4
@@ -47355,17 +47374,21 @@ var FLOW_PRESETS = [
     category: "flow",
     description: "Fine white-grey streamlines visualising wind sweeping across an open landscape",
     tags: ["wind", "air", "white", "subtle", "landscape"],
-    count: 120,
-    pathSteps: 70,
-    stepSize: 0.028,
-    noiseScale: 1,
+    // Many very fine lines flowing rightward
+    count: 1600,
+    pathSteps: 80,
+    stepSize: 0.024,
+    noiseScale: 0.9,
     noiseOctaves: 2,
-    sizeMin: 0.4,
-    sizeMax: 1.2,
+    sizeMin: 0.2,
+    sizeMax: 0.7,
     color: "#E8EEF4",
     colorVariation: 0.06,
-    opacity: 0.35,
+    opacity: 0.4,
     swirling: 0,
+    flowAngle: 0,
+    // rightward
+    flowStrength: 0.7,
     depthDistribution: "uniform",
     depthEasing: "linear",
     horizonY: 0.35
@@ -49766,6 +49789,8 @@ var FLOW_PROPERTIES = [
   { key: "noiseScale", label: "Noise Scale", type: "number", default: 1.2, min: 0.1, max: 8, step: 0.1, group: "field" },
   { key: "noiseOctaves", label: "Noise Octaves", type: "number", default: 3, min: 1, max: 6, step: 1, group: "field" },
   { key: "swirling", label: "Swirling", type: "number", default: 0.15, min: 0, max: 1, step: 0.05, group: "field" },
+  { key: "flowAngle", label: "Flow Angle", type: "number", default: 0, min: 0, max: 360, step: 5, group: "field" },
+  { key: "flowStrength", label: "Flow Strength", type: "number", default: 0, min: 0, max: 1, step: 0.05, group: "field" },
   { key: "sizeMin", label: "Size Min", type: "number", default: 0.8, min: 0.2, max: 20, step: 0.2, group: "size" },
   { key: "sizeMax", label: "Size Max", type: "number", default: 2.5, min: 0.2, max: 20, step: 0.2, group: "size" },
   { key: "color", label: "Color", type: "color", default: "#C8C8C8", group: "style" },
@@ -49813,6 +49838,8 @@ function resolveProps6(properties) {
     noiseScale: properties.noiseScale ?? fp?.noiseScale ?? 1.2,
     noiseOctaves: properties.noiseOctaves ?? fp?.noiseOctaves ?? 3,
     swirling: properties.swirling ?? fp?.swirling ?? 0.15,
+    flowAngle: properties.flowAngle ?? fp?.flowAngle ?? 0,
+    flowStrength: properties.flowStrength ?? fp?.flowStrength ?? 0,
     sizeMin: properties.sizeMin ?? fp?.sizeMin ?? 0.8,
     sizeMax: properties.sizeMax ?? fp?.sizeMax ?? 2.5,
     color: properties.color || fp?.color || "#C8C8C8",
@@ -49825,12 +49852,19 @@ function resolveProps6(properties) {
     atmosphericMode: properties.atmosphericMode ?? "none"
   };
 }
-function curlAt(nx, ny, noise, swirling) {
+function curlAt(nx, ny, noise, swirling, flowAngle = 0, flowStrength = 0) {
   const eps = 0.01;
   const ddx = (noise(nx + eps, ny) - noise(nx - eps, ny)) / (2 * eps);
   const ddy = (noise(nx, ny + eps) - noise(nx, ny - eps)) / (2 * eps);
   const angle = Math.atan2(ddy, -ddx) + swirling * Math.PI * 0.5;
-  return [Math.cos(angle), Math.sin(angle)];
+  const curlDx = Math.cos(angle);
+  const curlDy = Math.sin(angle);
+  if (flowStrength <= 0) return [curlDx, curlDy];
+  const flowRad = flowAngle * Math.PI / 180;
+  const bx = (1 - flowStrength) * curlDx + flowStrength * Math.cos(flowRad);
+  const by = (1 - flowStrength) * curlDy + flowStrength * Math.sin(flowRad);
+  const len = Math.sqrt(bx * bx + by * by);
+  return len > 1e-3 ? [bx / len, by / len] : [Math.cos(flowRad), Math.sin(flowRad)];
 }
 var flowLayerType = {
   typeId: "particles:flow",
@@ -49865,19 +49899,47 @@ var flowLayerType = {
       if (p.atmosphericMode !== "none") {
         color = applyAtmosphericDepth(color, laneDepth, p.atmosphericMode);
       }
-      const points = [];
+      const rawPts = [];
       let cx = startX;
       let cy = startY;
+      let prevDx = 0, prevDy = 0;
+      let cumAngle = 0, prevAngle = 0;
+      let hasDir = false;
+      const loopDistSq = stepPx * 5 * (stepPx * 5);
+      const minLoopStep = Math.max(8, Math.floor(p.pathSteps * 0.25));
       for (let step = 0; step < p.pathSteps; step++) {
-        const t = step / (p.pathSteps - 1);
-        const widthScale = Math.sin(Math.PI * t);
-        points.push({ x: cx, y: cy, width: size * widthScale });
         const nx = cx / minDim * p.noiseScale;
         const ny = cy / minDim * p.noiseScale;
-        const [dx, dy] = curlAt(nx, ny, noise, p.swirling);
+        const [dx, dy] = curlAt(nx, ny, noise, p.swirling, p.flowAngle, p.flowStrength);
+        if (hasDir) {
+          if (dx * prevDx + dy * prevDy < -0.4) break;
+          const angle = Math.atan2(dy, dx);
+          let delta = angle - prevAngle;
+          if (delta > Math.PI) delta -= 2 * Math.PI;
+          if (delta < -Math.PI) delta += 2 * Math.PI;
+          cumAngle += delta;
+          if (Math.abs(cumAngle) > 3 * Math.PI) break;
+          prevAngle = angle;
+          if (step >= minLoopStep) {
+            const dsx = cx - startX, dsy = cy - startY;
+            if (dsx * dsx + dsy * dsy < loopDistSq) break;
+          }
+        } else {
+          prevAngle = Math.atan2(dy, dx);
+          hasDir = true;
+        }
+        rawPts.push({ x: cx, y: cy });
+        prevDx = dx;
+        prevDy = dy;
         cx += dx * stepPx;
         cy += dy * stepPx;
       }
+      if (rawPts.length < 2) continue;
+      const n = rawPts.length;
+      const points = rawPts.map((pt, i2) => ({
+        ...pt,
+        width: size * Math.sin(Math.PI * (i2 / (n - 1)))
+      }));
       if (points.length < 2) continue;
       const profile = {
         points,
