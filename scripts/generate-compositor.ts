@@ -117,7 +117,25 @@ function extractLayerTypes(pluginDir: string): ExtractedRenderer[] {
  * The generated output is a plain JS string (embedded in a TS template literal)
  * that will be injected into the compositor's <script> block.
  */
-function generatePluginIIFE(pluginDir: string, typeIds: string[]): string {
+/**
+ * Build a map of known inlineable CJS packages (id → exports object).
+ * These are packages that render() functions legitimately depend on at runtime
+ * in the browser compositor — i.e. not just Node/MCP utilities.
+ */
+function buildInlineableRequireMap(): Map<string, Record<string, unknown>> {
+  const map = new Map<string, Record<string, unknown>>();
+
+  // @genart-dev/illustration — used by particles:flow and particles:mark-field
+  const illustrationCjs = resolve(PLUGINS_DIR, "illustration/dist/index.cjs");
+  if (existsSync(illustrationCjs)) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    map.set("@genart-dev/illustration", require(illustrationCjs) as Record<string, unknown>);
+  }
+
+  return map;
+}
+
+function generatePluginIIFE(pluginDir: string, typeIds: string[], inlineMap: Map<string, Record<string, unknown>>): string {
   const cjsPath = resolve(PLUGINS_DIR, pluginDir, "dist/index.cjs");
   let source = readFileSync(cjsPath, "utf-8");
 
@@ -126,6 +144,34 @@ function generatePluginIIFE(pluginDir: string, typeIds: string[]): string {
 
   // Remove the "use strict" at the top (we're already in strict mode)
   source = source.replace(/^"use strict";\n?/, "");
+
+  // Detect which inlineable deps this plugin's source actually requires
+  const neededDeps: Array<[string, string]> = []; // [id, varName]
+  for (const [id] of inlineMap) {
+    const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`require\\(["']${escapedId}["']\\)`).test(source)) {
+      const varName = `__dep_${sanitize(id)}`;
+      neededDeps.push([id, varName]);
+    }
+  }
+
+  // Build inline dep variable declarations (each dep is serialised via JSON for primitives;
+  // for function-bearing objects we re-require() the already-loaded module at generation time
+  // and embed the CJS source as a nested inline module).
+  const depSetup = neededDeps
+    .map(([id, varName]) => {
+      const depCjs = resolve(PLUGINS_DIR, id.replace("@genart-dev/", ""), "dist/index.cjs");
+      let depSource = readFileSync(depCjs, "utf-8");
+      depSource = depSource.replace(/\/\/# sourceMappingURL=.*/g, "").replace(/^"use strict";\n?/, "");
+      return `    var ${varName} = (function() { var module={exports:{}}; var exports=module.exports; ${depSource}; return module.exports; })();`;
+    })
+    .join("\n");
+
+  // Build require stub that resolves known deps and stubs everything else
+  const requireCases = neededDeps
+    .map(([id, varName]) => `if (id === "${id}") return ${varName};`)
+    .join(" ");
+  const requireStub = `function(id) { ${requireCases} return {}; }`;
 
   // Build the IIFE: execute the CJS module in a fake module scope,
   // then extract each layer type's render function by typeId.
@@ -150,10 +196,8 @@ function generatePluginIIFE(pluginDir: string, typeIds: string[]): string {
   (function(__R) {
     var module = { exports: {} };
     var exports = module.exports;
-    var require = function(id) {
-      // Stub: external deps are only used by MCP tools / Node utilities, not render()
-      return {};
-    };
+${depSetup}
+    var require = ${requireStub};
     ${source}
     var __plugin = module.exports.default || module.exports;
     if (__plugin && __plugin.layerTypes) {
@@ -187,10 +231,13 @@ function generate(): void {
   console.log(`  Existing (hardcoded): ${EXISTING_TYPES.size}`);
   console.log(`  Total: ${totalNew + EXISTING_TYPES.size}\n`);
 
+  // Build the inlineable require map (illustration, etc.)
+  const inlineMap = buildInlineableRequireMap();
+
   // Generate the IIFE blocks
   const iifes: string[] = [];
   for (const [dir, ids] of pluginTypes) {
-    iifes.push(generatePluginIIFE(dir, ids));
+    iifes.push(generatePluginIIFE(dir, ids, inlineMap));
   }
 
   const generatedCode = iifes.join("\n");
