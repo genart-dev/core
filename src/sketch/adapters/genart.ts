@@ -50,6 +50,10 @@ interface CompiledExports {
     mouseDown: boolean,
     pmouseX: number,
     pmouseY: number,
+    touchX: number,
+    touchY: number,
+    touches: Array<{ id: number; x: number; y: number }>,
+    prev: ImageData | null,
   ) => void;
   post?: (ctx: CanvasRenderingContext2D, renderContext: "static" | "animated") => void;
 }
@@ -134,6 +138,9 @@ export class GenArtRendererAdapter implements RendererAdapter {
     let frameCount = 0;
     let startTime = 0;
     let mouseX = 0, mouseY = 0, mouseDown = false, pmouseX = 0, pmouseY = 0;
+    let touchX = 0, touchY = 0;
+    let activeTouches: Map<number, { id: number; x: number; y: number }> = new Map();
+    let prevFrame: ImageData | null = null;
     let watchCb: WatchCallback | undefined;
     // Stable wrapper — never changes reference so re-evals don't need to update scope.
     // Codegen emits `if (typeof __watch__ !== "undefined") __watch__(...)`, so this always fires;
@@ -183,9 +190,13 @@ export class GenArtRendererAdapter implements RendererAdapter {
       function loop() {
         if (!animating || !ctx) return;
         const t = (performance.now() - startTime) / 1000;
+        const touchArr = Array.from(activeTouches.values());
         exports!.frame!(ctx, t, frameCount, canvas.width, canvas.height, 60,
-          mouseX, mouseY, mouseDown, pmouseX, pmouseY);
+          mouseX, mouseY, mouseDown, pmouseX, pmouseY,
+          touchX, touchY, touchArr, prevFrame);
         if (exports!.post) exports!.post(ctx, "animated");
+        // Capture frame for `prev` built-in — available on next frame
+        if (canvasEl) prevFrame = ctx.getImageData(0, 0, canvasEl.width, canvasEl.height);
         frameCount++;
         animationFrameId = requestAnimationFrame(loop);
       }
@@ -216,9 +227,28 @@ export class GenArtRendererAdapter implements RendererAdapter {
           pmouseX = mouseX; pmouseY = mouseY;
           mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
           mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+          // Update touch state for this pointer
+          const tx = mouseX, ty = mouseY;
+          touchX = tx; touchY = ty;
+          if (activeTouches.has(e.pointerId)) {
+            activeTouches.set(e.pointerId, { id: e.pointerId, x: tx, y: ty });
+          }
         });
-        canvasEl.addEventListener("pointerdown", () => { mouseDown = true; });
-        canvasEl.addEventListener("pointerup", () => { mouseDown = false; });
+        canvasEl.addEventListener("pointerdown", (e) => {
+          mouseDown = true;
+          const rect = canvasEl!.getBoundingClientRect();
+          const tx = (e.clientX - rect.left) * (canvas.width / rect.width);
+          const ty = (e.clientY - rect.top) * (canvas.height / rect.height);
+          touchX = tx; touchY = ty;
+          activeTouches.set(e.pointerId, { id: e.pointerId, x: tx, y: ty });
+        });
+        canvasEl.addEventListener("pointerup", (e) => {
+          mouseDown = false;
+          activeTouches.delete(e.pointerId);
+        });
+        canvasEl.addEventListener("pointercancel", (e) => {
+          activeTouches.delete(e.pointerId);
+        });
 
         exports = evalCode(ctx);
 
@@ -362,7 +392,7 @@ if (exports.isAnimated) {
   const t0 = performance.now();
   let frame = 0;
   function loop() {
-    exports.frame(ctx, (performance.now()-t0)/1000, frame++, w, h, 60, 0,0,false,0,0);
+    exports.frame(ctx, (performance.now()-t0)/1000, frame++, w, h, 60, 0,0,false,0,0, 0,0,[],null);
     if (exports.post) exports.post(ctx, "animated");
     requestAnimationFrame(loop);
   }
