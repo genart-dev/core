@@ -27,6 +27,7 @@ const VALID_RENDERER_TYPES: readonly RendererType[] = [
   "glsl",
   "canvas2d",
   "svg",
+  "genart",
 ];
 
 function assertString(value: unknown, field: string): asserts value is string {
