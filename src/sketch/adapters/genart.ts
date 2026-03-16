@@ -16,7 +16,8 @@ import type {
   RuntimeDependency,
 } from "../../types.js";
 import { compile as compileGenArtScript } from "@genart-dev/genart-script";
-import { generateCompositorScript, generateCompositorCall } from "../../design/iframe-compositor.js";
+import { resolveComponents } from "@genart-dev/components";
+import { generateCompositorScript } from "../../design/iframe-compositor.js";
 
 // ---------------------------------------------------------------------------
 // Internal types
@@ -34,6 +35,8 @@ interface GenArtCompiledAlgorithm {
   code: string;
   params: Array<{ key: string; label: string; min: number; max: number; step: number; default: number }>;
   colors: Array<{ key: string; label: string; default: string }>;
+  /** Component code to prepend before compiled algorithm. */
+  componentCode: string;
   buildGlobals: BuildGlobalsFn;
 }
 
@@ -97,11 +100,25 @@ export class GenArtRendererAdapter implements RendererAdapter {
       throw new Error(`GenArt Script compile error: ${msgs}`);
     }
 
+    // Resolve components declared via `use "component-name"`
+    // The `components` field is added in genart-script >=0.2.0; gracefully handle older versions.
+    let componentCode = "";
+    const componentNames: string[] = (result as unknown as Record<string, unknown>).components as string[] ?? [];
+    if (componentNames.length > 0) {
+      const componentMap: Record<string, string> = {};
+      for (const name of componentNames) componentMap[name] = "*";
+      const resolved = resolveComponents(componentMap, "canvas2d");
+      componentCode = resolved.map(c =>
+        `// --- component: ${c.name} v${c.version} ---\n${c.code}`
+      ).join("\n\n");
+    }
+
     const compiled: GenArtCompiledAlgorithm = {
       source: algorithm,
       code: result.code,
       params: result.params,
       colors: result.colors,
+      componentCode,
       buildGlobals: buildGlobals as unknown as BuildGlobalsFn,
     };
     return compiled as unknown as CompiledAlgorithm;
@@ -127,7 +144,7 @@ export class GenArtRendererAdapter implements RendererAdapter {
     state: SketchState,
     canvas: CanvasSpec,
   ): SketchInstance {
-    const { code, params, colors, buildGlobals } = compiled as unknown as GenArtCompiledAlgorithm;
+    const { code, componentCode, params, colors, buildGlobals } = compiled as unknown as GenArtCompiledAlgorithm;
     const density = canvas.pixelDensity ?? 1;
 
     let canvasEl: HTMLCanvasElement | null = null;
@@ -172,6 +189,15 @@ export class GenArtRendererAdapter implements RendererAdapter {
         __canvas__: canvasEl,
         // Watch callback — stable wrapper delegates to current watchCb (set via setWatchCallback)
         __watch__: stableWatch,
+        // renderLayers() bridge — calls compositor to get layers as offscreen canvas
+        renderLayers: () => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const win = window as any;
+          if (typeof win.__genart_compositeToOffscreen === "function") {
+            return win.__genart_compositeToOffscreen(canvas.width, canvas.height);
+          }
+          return null;
+        },
       };
     }
 
@@ -179,7 +205,7 @@ export class GenArtRendererAdapter implements RendererAdapter {
       const scope = buildScope(ctx2d);
       const keys = Object.keys(scope);
       const vals = keys.map(k => scope[k]);
-      const wrapped = `${code}\nreturn __exports__;`;
+      const wrapped = `${componentCode}\n${code}\nreturn __exports__;`;
       // eslint-disable-next-line @typescript-eslint/no-implied-eval
       const fn = new Function(...keys, wrapped);
       return fn(...vals) as CompiledExports;
@@ -357,9 +383,22 @@ export class GenArtRendererAdapter implements RendererAdapter {
       throw new Error(`GenArt Script compile error: ${msgs}`);
     }
 
+    // Resolve components declared via `use "component-name"`
+    const componentNames: string[] = (result as unknown as Record<string, unknown>).components as string[] ?? [];
+    let standaloneComponentCode = "";
+    if (componentNames.length > 0) {
+      const componentMap: Record<string, string> = {};
+      for (const name of componentNames) componentMap[name] = "*";
+      const resolved = resolveComponents(componentMap, "canvas2d");
+      standaloneComponentCode = resolved.map(c =>
+        `// --- component: ${c.name} v${c.version} ---\n${c.code}`
+      ).join("\n\n") + "\n\n";
+    }
+
     const { width, height } = sketch.canvas;
     const stateJson = JSON.stringify(sketch.state, null, 2);
     const compiledCode = result.code;
+    const hasLayers = sketch.layers && sketch.layers.length > 0;
     return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>${sketch.title}</title>
@@ -367,7 +406,7 @@ export class GenArtRendererAdapter implements RendererAdapter {
 </head>
 <body>
 <canvas id="c" width="${width}" height="${height}"></canvas>
-${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
+${hasLayers ? generateCompositorScript(sketch.layers!) : ""}
 <script>
 (function() {
 const canvas = document.getElementById("c");
@@ -457,6 +496,15 @@ var __rnd__ = {seed:function(){}};
 var __canvas__ = canvas;
 function buffer(bw, bh) { var c = document.createElement("canvas"); c.width = bw; c.height = bh; return c; }
 
+// --- components (from use "component-name" declarations) ---
+${standaloneComponentCode}// renderLayers() bridge — calls compositor to get layers as offscreen canvas
+var __renderLayersCalled__ = false;
+function renderLayers() {
+  __renderLayersCalled__ = true;
+  if (typeof window.__genart_compositeToOffscreen === "function") return window.__genart_compositeToOffscreen(${width}, ${height});
+  return null;
+}
+
 // --- compiled code (inlined, no eval/new Function) ---
 ${compiledCode}
 
@@ -479,13 +527,13 @@ if (typeof __exports__ !== "undefined") {
     function loop() {
       try { __exports__.frame(ctx, (performance.now()-t0)/1000, frame++, w, h, 60, 0,0,false,0,0, 0,0,[],null); } catch(e) { console.error("[genart]",e); }
       try { if (__exports__.post) __exports__.post(ctx, "animated"); } catch(e) { console.error("[genart post]",e); }
-      if (window.__genart_compositeLayersFrame) window.__genart_compositeLayersFrame(canvas);
+      if (!__renderLayersCalled__ && window.__genart_compositeLayersFrame) window.__genart_compositeLayersFrame(canvas);
       requestAnimationFrame(loop);
     }
     requestAnimationFrame(loop);
   } else {
     try { if (__exports__.post) __exports__.post(ctx, "static"); } catch(e) { console.error("[genart post]",e); }
-    if (window.__genart_compositeLayers) window.__genart_compositeLayers(canvas);
+    if (!__renderLayersCalled__ && window.__genart_compositeLayers) window.__genart_compositeLayers(canvas);
   }
 }
 })();
