@@ -453,6 +453,7 @@ function rnd(a,b){return b===undefined?Math.random()*a:a+Math.random()*(b-a);}
 function rndInt(a,b){return Math.floor(b===undefined?Math.random()*a:a+Math.random()*(b-a));}
 var __rnd__ = {seed:function(){}};
 var __canvas__ = canvas;
+function buffer(bw, bh) { var c = document.createElement("canvas"); c.width = bw; c.height = bh; return c; }
 
 // --- compiled code (inlined, no eval/new Function) ---
 ${compiledCode}
