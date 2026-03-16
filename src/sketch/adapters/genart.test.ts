@@ -83,6 +83,6 @@ describe("GenArtRendererAdapter", () => {
     const html = adapter.generateStandaloneHTML(sketch as any);
     expect(html).toContain("<!DOCTYPE html>");
     expect(html).toContain("Test Sketch");
-    expect(html).toContain("genart-script");
+    expect(html).toContain("__exports__");
   });
 });

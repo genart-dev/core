@@ -16,6 +16,7 @@ import type {
   RuntimeDependency,
 } from "../../types.js";
 import { compile as compileGenArtScript } from "@genart-dev/genart-script";
+import { generateCompositorScript, generateCompositorCall } from "../../design/iframe-compositor.js";
 
 // ---------------------------------------------------------------------------
 // Internal types
@@ -366,6 +367,7 @@ export class GenArtRendererAdapter implements RendererAdapter {
 </head>
 <body>
 <canvas id="c" width="${width}" height="${height}"></canvas>
+${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
 <script>
 (function() {
 const canvas = document.getElementById("c");
@@ -458,6 +460,16 @@ function buffer(bw, bh) { var c = document.createElement("canvas"); c.width = bw
 // --- compiled code (inlined, no eval/new Function) ---
 ${compiledCode}
 
+// Resolve param-bound layer opacities (e.g. opacity:fog → paramVals["fog"])
+if (window.__genart_design && window.__genart_design.layers) {
+  window.__genart_design.layers.forEach(function(l) {
+    if (l.properties && l.properties.__opacityParam) {
+      var pv = paramVals[l.properties.__opacityParam];
+      if (pv !== undefined) l.opacity = pv;
+    }
+  });
+}
+
 // --- run ---
 if (typeof __exports__ !== "undefined") {
   if (__exports__.once) __exports__.once(ctx);
@@ -467,11 +479,13 @@ if (typeof __exports__ !== "undefined") {
     function loop() {
       try { __exports__.frame(ctx, (performance.now()-t0)/1000, frame++, w, h, 60, 0,0,false,0,0, 0,0,[],null); } catch(e) { console.error("[genart]",e); }
       try { if (__exports__.post) __exports__.post(ctx, "animated"); } catch(e) { console.error("[genart post]",e); }
+      if (window.__genart_compositeLayersFrame) window.__genart_compositeLayersFrame(canvas);
       requestAnimationFrame(loop);
     }
     requestAnimationFrame(loop);
   } else {
     try { if (__exports__.post) __exports__.post(ctx, "static"); } catch(e) { console.error("[genart post]",e); }
+    if (window.__genart_compositeLayers) window.__genart_compositeLayers(canvas);
   }
 }
 })();
