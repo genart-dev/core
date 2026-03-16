@@ -15,6 +15,7 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
+import { compile as compileGenArtScript } from "@genart-dev/genart-script";
 
 // ---------------------------------------------------------------------------
 // Internal types
@@ -348,10 +349,8 @@ export class GenArtRendererAdapter implements RendererAdapter {
   }
 
   generateStandaloneHTML(sketch: SketchDefinition): string {
-    // Compile GenArt Script source server-side to avoid CDN dependency
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { compile } = require("@genart-dev/genart-script") as { compile: (src: string) => { ok: boolean; code: string; errors: Array<{ line: number; col: number; message: string }> } };
-    const result = compile(sketch.algorithm);
+    // Compile GenArt Script source at build time (static import, works in both Node and browser)
+    const result = compileGenArtScript(sketch.algorithm);
     if (!result.ok) {
       const msgs = result.errors.map(e => `${e.line}:${e.col} ${e.message}`).join("; ");
       throw new Error(`GenArt Script compile error: ${msgs}`);
