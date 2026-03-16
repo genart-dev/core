@@ -348,8 +348,18 @@ export class GenArtRendererAdapter implements RendererAdapter {
   }
 
   generateStandaloneHTML(sketch: SketchDefinition): string {
+    // Compile GenArt Script source server-side to avoid CDN dependency
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { compile } = require("@genart-dev/genart-script") as { compile: (src: string) => { ok: boolean; code: string; errors: Array<{ line: number; col: number; message: string }> } };
+    const result = compile(sketch.algorithm);
+    if (!result.ok) {
+      const msgs = result.errors.map(e => `${e.line}:${e.col} ${e.message}`).join("; ");
+      throw new Error(`GenArt Script compile error: ${msgs}`);
+    }
+
     const { width, height } = sketch.canvas;
     const stateJson = JSON.stringify(sketch.state, null, 2);
+    const compiledCode = result.code;
     return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>${sketch.title}</title>
@@ -357,40 +367,85 @@ export class GenArtRendererAdapter implements RendererAdapter {
 </head>
 <body>
 <canvas id="c" width="${width}" height="${height}"></canvas>
-<script type="module">
-import { compile } from "https://cdn.skypack.dev/@genart-dev/genart-script";
-const source = ${JSON.stringify(sketch.algorithm)};
-const state = ${stateJson};
-const result = compile(source);
-if (!result.ok) { console.error(result.errors); throw new Error("Compile failed"); }
+<script>
+(function() {
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
 const w = ${width}, h = ${height};
+const state = ${stateJson};
 const paramVals = state.params ?? {};
 const colorVals = {};
-${JSON.stringify(sketch.colors ?? [])}.forEach((c, i) => {
+${JSON.stringify(sketch.colors ?? [])}.forEach(function(c, i) {
   colorVals[c.key] = (state.colorPalette ?? [])[i] ?? c.default;
 });
-const globals = { ctx, w, h, __params__: paramVals, __colors__: colorVals,
-  PI: Math.PI, TWO_PI: Math.PI*2, HALF_PI: Math.PI/2,
+
+// Color alpha helper — converts hex/named to rgba with alpha
+function __colorAlpha__(color, alpha) {
+  var h = color.startsWith("#") ? color.slice(1) : {
+    red:"ff0000",green:"008000",blue:"0000ff",white:"ffffff",black:"000000",
+    gray:"808080",yellow:"ffff00",orange:"ffa500",purple:"800080",pink:"ffc0cb",
+    cyan:"00ffff",coral:"ff7f50",salmon:"fa8072",gold:"ffd700",teal:"008080",
+    navy:"000080",maroon:"800000",lime:"00ff00",indigo:"4b0082",violet:"ee82ee",
+    crimson:"dc143c",turquoise:"40e0d0",lavender:"e6e6fa"
+  }[color.toLowerCase()];
+  if (!h) return color;
+  if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  var r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+  return "rgba("+r+","+g+","+b+","+alpha+")";
+}
+
+// Gradient helpers
+function __linearGradient__(angle, stops) {
+  var rad = angle * Math.PI / 180;
+  var x0 = w/2 - Math.cos(rad)*w/2, y0 = h/2 - Math.sin(rad)*h/2;
+  var x1 = w/2 + Math.cos(rad)*w/2, y1 = h/2 + Math.sin(rad)*h/2;
+  var g = ctx.createLinearGradient(x0, y0, x1, y1);
+  stops.forEach(function(c,i) { g.addColorStop(i/(stops.length-1), c); });
+  return g;
+}
+function __radialGradient__(cx, cy, stops) {
+  var r = Math.min(w, h) / 2;
+  var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  stops.forEach(function(c,i) { g.addColorStop(i/(stops.length-1), c); });
+  return g;
+}
+
+// Perlin noise
+var noise = (function() {
+  var P = new Uint8Array(512);
+  var base = Array.from({length:256}, function(_,i){return i;});
+  var s = 0;
+  for (var i=255; i>0; i--) { s=(Math.imul(s,1664525)+1013904223)>>>0; var j=s%(i+1); var tmp=base[i]; base[i]=base[j]; base[j]=tmp; }
+  for (var i=0; i<512; i++) P[i]=base[i&255];
+  function fade(t){return t*t*t*(t*(t*6-15)+10);}
+  function nlerp(t,a,b){return a+t*(b-a);}
+  function grad(h,x,y,z){h&=15;var u=h<8?x:y,v=h<4?y:h===12||h===14?x:z;return((h&1)?-u:u)+((h&2)?-v:v);}
+  function n3(x,y,z){var X=Math.floor(x)&255,Y=Math.floor(y)&255,Z=Math.floor(z)&255;x-=Math.floor(x);y-=Math.floor(y);z-=Math.floor(z);var u=fade(x),v=fade(y),fw=fade(z);var A=P[X]+Y,AA=P[A]+Z,AB=P[A+1]+Z,B=P[X+1]+Y,BA=P[B]+Z,BB=P[B+1]+Z;return nlerp(fw,nlerp(v,nlerp(u,grad(P[AA],x,y,z),grad(P[BA],x-1,y,z)),nlerp(u,grad(P[AB],x,y-1,z),grad(P[BB],x-1,y-1,z))),nlerp(v,nlerp(u,grad(P[AA+1],x,y,z-1),grad(P[BA+1],x-1,y,z-1)),nlerp(u,grad(P[AB+1],x,y-1,z-1),grad(P[BB+1],x-1,y-1,z-1))));}
+  return function(x,y,z){return n3(x,y!==undefined?y:0,z!==undefined?z:0);};
+})();
+
+var __renderCtx__ = { value: "static" };
+var globals = { ctx:ctx, w:w, h:h, __params__:paramVals, __colors__:colorVals,
+  PI:Math.PI, TWO_PI:Math.PI*2, HALF_PI:Math.PI/2,
   sin:Math.sin, cos:Math.cos, tan:Math.tan, atan2:Math.atan2,
   sqrt:Math.sqrt, abs:Math.abs, floor:Math.floor, ceil:Math.ceil,
   round:Math.round, min:Math.min, max:Math.max, pow:Math.pow, log:Math.log, exp:Math.exp,
-  lerp:(a,b,t)=>a+(b-a)*t, clamp:(v,lo,hi)=>Math.max(lo,Math.min(hi,v)),
-  map:(v,il,ih,ol,oh)=>ol+((v-il)/(ih-il))*(oh-ol),
-  dist:(x1,y1,x2,y2)=>Math.sqrt((x2-x1)**2+(y2-y1)**2),
-  __colorAlpha__:(c,a)=>c, __linearGradient__:()=>"#000", __radialGradient__:()=>"#000",
-  rnd:(a,b)=>b===undefined?Math.random()*a:a+Math.random()*(b-a),
-  rndInt:(a,b)=>Math.floor(b===undefined?Math.random()*a:a+Math.random()*(b-a)),
-  noise:(x)=>Math.sin(x*127.1)*0.5,
-  __rnd__:{seed:()=>{}}, __canvas__:canvas,
+  lerp:function(a,b,t){return a+(b-a)*t;}, clamp:function(v,lo,hi){return Math.max(lo,Math.min(hi,v));},
+  map:function(v,il,ih,ol,oh){return ol+((v-il)/(ih-il))*(oh-ol);},
+  dist:function(x1,y1,x2,y2){return Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));},
+  __colorAlpha__:__colorAlpha__, __linearGradient__:__linearGradient__, __radialGradient__:__radialGradient__,
+  rnd:function(a,b){return b===undefined?Math.random()*a:a+Math.random()*(b-a);},
+  rndInt:function(a,b){return Math.floor(b===undefined?Math.random()*a:a+Math.random()*(b-a));},
+  noise:noise,
+  __rnd__:{seed:function(){}}, __canvas__:canvas, __renderCtx__:__renderCtx__,
 };
-const fn = new Function(...Object.keys(globals), result.code + "\\nreturn __exports__;");
-const exports = fn(...Object.values(globals));
+var code = ${JSON.stringify(compiledCode)};
+var fn = new Function(Object.keys(globals).join(","), code + "\\nreturn __exports__;");
+var exports = fn.apply(null, Object.keys(globals).map(function(k){return globals[k];}));
 if (exports.once) exports.once(ctx);
 if (exports.isAnimated) {
-  const t0 = performance.now();
-  let frame = 0;
+  var t0 = performance.now();
+  var frame = 0;
   function loop() {
     exports.frame(ctx, (performance.now()-t0)/1000, frame++, w, h, 60, 0,0,false,0,0, 0,0,[],null);
     if (exports.post) exports.post(ctx, "animated");
@@ -400,6 +455,7 @@ if (exports.isAnimated) {
 } else {
   if (exports.post) exports.post(ctx, "static");
 }
+})();
 </script>
 </body></html>`;
   }
