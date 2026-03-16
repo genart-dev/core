@@ -424,6 +424,22 @@ var noise = (function() {
 })();
 
 var __renderCtx__ = { value: "static" };
+
+// Post-processing effects
+function __resolveQ__(q) { if(q==="high")return"high";if(q==="fast")return"fast";return __renderCtx__.value==="static"?"high":"fast"; }
+function __tmpCanvas__() { var c=document.createElement("canvas");c.width=canvas.width;c.height=canvas.height;return c; }
+function vignette(s){s=s||0.5;var r=Math.max(w,h)*0.65;var g=ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,r);g.addColorStop(0,"transparent");g.addColorStop(1,"rgba(0,0,0,"+s+")");ctx.save();ctx.fillStyle=g;ctx.fillRect(0,0,w,h);ctx.restore();}
+function grain(a){a=a||0.15;var n=Math.floor(w*h*a*0.1);ctx.save();ctx.globalAlpha=0.35;for(var i=0;i<n;i++){var x=Math.random()*w,y=Math.random()*h,v=Math.random()>0.5?255:0;ctx.fillStyle="rgb("+v+","+v+","+v+")";ctx.fillRect(x,y,1,1);}ctx.restore();}
+function bloom(s,r){s=s||0.5;r=r||8;var t=__tmpCanvas__();var tc=t.getContext("2d");tc.filter="blur("+r+"px)";tc.drawImage(canvas,0,0);ctx.save();ctx.globalCompositeOperation="screen";ctx.globalAlpha=s;ctx.drawImage(t,0,0);ctx.restore();}
+function grade(c,s,b,hu){c=c||1;s=s||1;b=b||1;hu=hu||0;var p=[];if(c!==1)p.push("contrast("+c+")");if(s!==1)p.push("saturate("+s+")");if(b!==1)p.push("brightness("+b+")");if(hu!==0)p.push("hue-rotate("+hu+"deg)");if(!p.length)return;var t=__tmpCanvas__();var tc=t.getContext("2d");tc.filter=p.join(" ");tc.drawImage(canvas,0,0);ctx.clearRect(0,0,w,h);ctx.drawImage(t,0,0);}
+function blur(r){var t=__tmpCanvas__();var tc=t.getContext("2d");tc.filter="blur("+r+"px)";tc.drawImage(canvas,0,0);ctx.clearRect(0,0,w,h);ctx.drawImage(t,0,0);}
+function scanlines(o){o=o||0.15;ctx.save();ctx.globalAlpha=o;ctx.fillStyle="black";for(var y=0;y<h;y+=2)ctx.fillRect(0,y,w,1);ctx.restore();}
+function pixelate(bs){if(bs<2)return;var dw=Math.ceil(w/bs),dh=Math.ceil(h/bs);var t=document.createElement("canvas");t.width=dw;t.height=dh;var tc=t.getContext("2d");tc.imageSmoothingEnabled=false;tc.drawImage(canvas,0,0,dw,dh);ctx.save();ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,w,h);ctx.drawImage(t,0,0,w,h);ctx.restore();}
+function chromatic_aberration(amt,q){amt=amt||3;var m=__resolveQ__(q);if(m==="fast"){var t=__tmpCanvas__();var tc=t.getContext("2d");tc.drawImage(canvas,0,0);ctx.save();ctx.globalCompositeOperation="screen";ctx.globalAlpha=0.5;ctx.drawImage(t,amt,0);ctx.drawImage(t,-amt,0);ctx.restore();return;}var cw=canvas.width,ch=canvas.height;var id=ctx.getImageData(0,0,cw,ch);var s=id.data;var o=new Uint8ClampedArray(s.length);var a=Math.round(amt);for(var y=0;y<ch;y++)for(var x=0;x<cw;x++){var i=(y*cw+x)*4;var rx=Math.min(Math.max(x-a,0),cw-1);o[i]=s[(y*cw+rx)*4];o[i+1]=s[i+1];var bx=Math.min(Math.max(x+a,0),cw-1);o[i+2]=s[(y*cw+bx)*4+2];o[i+3]=s[i+3];}ctx.putImageData(new ImageData(o,cw,ch),0,0);}
+function distort(type,amt,q){type=type||"wave";amt=amt||10;if(__resolveQ__(q)==="fast")return;var cw=canvas.width,ch=canvas.height;var id=ctx.getImageData(0,0,cw,ch);var s=id.data;var o=new Uint8ClampedArray(s.length);for(var y=0;y<ch;y++)for(var x=0;x<cw;x++){var sx=x,sy=y;if(type==="wave"){sx=x+Math.round(amt*Math.sin(y*0.05));sy=y+Math.round(amt*Math.cos(x*0.05));}else if(type==="ripple"){var dx=x-cw/2,dy=y-ch/2,d=Math.sqrt(dx*dx+dy*dy),off=Math.round(amt*Math.sin(d*0.05));sx=x+(dx===0?0:Math.round(off*dx/d));sy=y+(dy===0?0:Math.round(off*dy/d));}else{sx=x+Math.round(amt*(Math.sin(x*127.1+y*311.7)*0.5));sy=y+Math.round(amt*(Math.sin(x*269.5+y*183.3)*0.5));}sx=Math.min(Math.max(sx,0),cw-1);sy=Math.min(Math.max(sy,0),ch-1);var si2=(sy*cw+sx)*4,di=(y*cw+x)*4;o[di]=s[si2];o[di+1]=s[si2+1];o[di+2]=s[si2+2];o[di+3]=s[si2+3];}ctx.putImageData(new ImageData(o,cw,ch),0,0);}
+function dither(str){str=str||0.5;var cw=canvas.width,ch=canvas.height;var id=ctx.getImageData(0,0,cw,ch);var d=id.data;var b=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];var sc=str*32;for(var y=0;y<ch;y++)for(var x=0;x<cw;x++){var i=(y*cw+x)*4;var th=(b[(y%4)*4+(x%4)]/16-0.5)*sc;d[i]=Math.min(255,Math.max(0,d[i]+th));d[i+1]=Math.min(255,Math.max(0,d[i+1]+th));d[i+2]=Math.min(255,Math.max(0,d[i+2]+th));}ctx.putImageData(id,0,0);}
+function halftone(ds,ang){ds=ds||4;ang=ang||0.3;var cw=canvas.width,ch=canvas.height;var id=ctx.getImageData(0,0,cw,ch);var s=id.data;ds=Math.max(2,Math.round(ds));ctx.clearRect(0,0,w,h);ctx.save();ctx.fillStyle="white";ctx.fillRect(0,0,w,h);var ca=Math.cos(ang),sa=Math.sin(ang);for(var y=0;y<ch;y+=ds)for(var x=0;x<cw;x+=ds){var cx2=Math.min(x+Math.floor(ds/2),cw-1),cy2=Math.min(y+Math.floor(ds/2),ch-1);var si2=(cy2*cw+cx2)*4;var lum=(s[si2]*0.299+s[si2+1]*0.587+s[si2+2]*0.114)/255;var r=(1-lum)*ds*0.5;if(r<0.5)continue;var px=x+ds/2,py=y+ds/2;var rx=px*ca-py*sa+w/2*(1-ca)+h/2*sa;var ry=px*sa+py*ca+h/2*(1-ca)-w/2*sa;ctx.beginPath();ctx.arc(rx,ry,r,0,Math.PI*2);ctx.fillStyle="rgb("+s[si2]+","+s[si2+1]+","+s[si2+2]+")";ctx.fill();}ctx.restore();}
+
 var globals = { ctx:ctx, w:w, h:h, __params__:paramVals, __colors__:colorVals,
   PI:Math.PI, TWO_PI:Math.PI*2, HALF_PI:Math.PI/2,
   sin:Math.sin, cos:Math.cos, tan:Math.tan, atan2:Math.atan2,
@@ -437,6 +453,9 @@ var globals = { ctx:ctx, w:w, h:h, __params__:paramVals, __colors__:colorVals,
   rndInt:function(a,b){return Math.floor(b===undefined?Math.random()*a:a+Math.random()*(b-a));},
   noise:noise,
   __rnd__:{seed:function(){}}, __canvas__:canvas, __renderCtx__:__renderCtx__,
+  vignette:vignette, grain:grain, bloom:bloom, grade:grade, blur:blur,
+  scanlines:scanlines, pixelate:pixelate, chromatic_aberration:chromatic_aberration,
+  distort:distort, dither:dither, halftone:halftone,
 };
 var code = ${JSON.stringify(compiledCode)};
 var fn = new Function(Object.keys(globals).join(","), code + "\\nreturn __exports__;");
@@ -446,13 +465,13 @@ if (exports.isAnimated) {
   var t0 = performance.now();
   var frame = 0;
   function loop() {
-    exports.frame(ctx, (performance.now()-t0)/1000, frame++, w, h, 60, 0,0,false,0,0, 0,0,[],null);
-    if (exports.post) exports.post(ctx, "animated");
+    try { exports.frame(ctx, (performance.now()-t0)/1000, frame++, w, h, 60, 0,0,false,0,0, 0,0,[],null); } catch(e) { console.error("[genart]",e); }
+    try { if (exports.post) exports.post(ctx, "animated"); } catch(e) { console.error("[genart post]",e); }
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
 } else {
-  if (exports.post) exports.post(ctx, "static");
+  try { if (exports.post) exports.post(ctx, "static"); } catch(e) { console.error("[genart post]",e); }
 }
 })();
 </script>
