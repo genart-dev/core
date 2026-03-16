@@ -4,7 +4,7 @@
  * Contains IIFE-wrapped plugin bundles that register render() functions
  * for 116 layer types into the RENDERERS map.
  *
- * Generated: 2026-03-16T01:15:45.871Z
+ * Generated: 2026-03-16T01:18:18.250Z
  */
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
