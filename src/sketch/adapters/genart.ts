@@ -4,6 +4,7 @@ import type {
   CanvasSpec,
   SketchDefinition,
   ParamDef,
+  TabDef,
   ColorDef,
 } from "@genart-dev/format";
 import type {
@@ -33,7 +34,8 @@ type BuildGlobalsFn = (
 interface GenArtCompiledAlgorithm {
   source: string;
   code: string;
-  params: Array<{ key: string; label: string; min: number; max: number; step: number; default: number }>;
+  params: Array<{ key: string; label: string; min: number; max: number; step: number; default: number; tab?: string }>;
+  tabs: Array<{ id: string; label: string }>;
   colors: Array<{ key: string; label: string; default: string }>;
   /** Component code to prepend before compiled algorithm. */
   componentCode: string;
@@ -117,6 +119,7 @@ export class GenArtRendererAdapter implements RendererAdapter {
       source: algorithm,
       code: result.code,
       params: result.params,
+      tabs: (result as unknown as Record<string, unknown>).tabs as GenArtCompiledAlgorithm["tabs"] ?? [],
       colors: result.colors,
       componentCode,
       buildGlobals: buildGlobals as unknown as BuildGlobalsFn,
@@ -128,13 +131,14 @@ export class GenArtRendererAdapter implements RendererAdapter {
    * Returns param/color defs extracted at compile time.
    * Merge into the sketch definition to expose them as controls.
    */
-  extractDefinitions(compiled: CompiledAlgorithm): { params: ParamDef[]; colors: ColorDef[] } {
-    const { params, colors } = compiled as unknown as GenArtCompiledAlgorithm;
+  extractDefinitions(compiled: CompiledAlgorithm): { params: ParamDef[]; tabs: TabDef[]; colors: ColorDef[] } {
+    const { params, tabs, colors } = compiled as unknown as GenArtCompiledAlgorithm;
     return {
       params: params.map(p => ({
-        key: p.key, label: p.label,
+        key: p.key, label: p.label, tab: p.tab,
         min: p.min, max: p.max, step: p.step, default: p.default,
       })),
+      tabs: tabs.map(t => ({ id: t.id, label: t.label })),
       colors: colors.map(c => ({ key: c.key, label: c.label, default: c.default })),
     };
   }
