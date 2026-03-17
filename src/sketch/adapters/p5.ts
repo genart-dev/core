@@ -13,12 +13,20 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
-import { extractComponentCode, extractSymbolData, generateDataInjection } from "./component-utils.js";
+import { extractComponentCode, extractSymbolData, generateDataInjection, generateLibraryScriptTags } from "./component-utils.js";
 import { generateInteractivePanel } from "../interactive-panel.js";
 import { generateCompositorScript } from "../../design/iframe-compositor.js";
 
-const P5_CDN_VERSION = "1.11.3";
-const P5_CDN_URL = `https://cdnjs.cloudflare.com/ajax/libs/p5.js/${P5_CDN_VERSION}/p5.min.js`;
+/** CDN URLs indexed by RendererSpec.version. Default (undefined/"1.x") → p5.js 1.x. */
+const P5_CDN_URLS: Record<string, string> = {
+  "1.x": "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js",
+  "2.x": "https://cdn.jsdelivr.net/npm/p5@2.0.3/lib/p5.min.js",
+};
+
+/** Resolve the correct p5.js CDN URL from sketch.renderer.version. */
+function getP5CdnUrl(sketch: SketchDefinition): string {
+  return P5_CDN_URLS[sketch.renderer.version ?? "1.x"] ?? P5_CDN_URLS["1.x"]!;
+}
 
 /**
  * Compiled p5 algorithm — wraps the algorithm source string
@@ -273,14 +281,15 @@ export class P5RendererAdapter implements RendererAdapter {
     }
     const colorsJson = JSON.stringify(colorsMap);
 
+    const libTags = generateLibraryScriptTags(sketch.libraries);
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(sketch.title)}</title>
-  <script src="${P5_CDN_URL}"></script>
-  <style>
+  <script src="${getP5CdnUrl(sketch)}"></script>
+${libTags ? `${libTags}\n` : ""}  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; }
     #canvas-container canvas { display: block; max-width: 100vw; max-height: 100vh; }
@@ -368,14 +377,15 @@ export class P5RendererAdapter implements RendererAdapter {
     }
     const colorsJson = JSON.stringify(colorsMap);
 
+    const libTags = generateLibraryScriptTags(sketch.libraries);
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(sketch.title)} — Preview</title>
-  <script src="${P5_CDN_URL}"></script>
-  <style>
+  <script src="${getP5CdnUrl(sketch)}"></script>
+${libTags ? `${libTags}\n` : ""}  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; }
     #canvas-container canvas { display: block; max-width: 100vw; max-height: 100vh; }
@@ -434,7 +444,26 @@ export class P5RendererAdapter implements RendererAdapter {
 </html>`;
   }
 
-  getAlgorithmTemplate(): string {
+  getAlgorithmTemplate(libraries?: readonly { name: string }[]): string {
+    const hasP5Brush = libraries?.some(l => l.name === "p5.brush") ?? false;
+    if (hasP5Brush) {
+      return `function sketch(p, state) {
+  const { WIDTH, HEIGHT, SEED, PARAMS, COLORS } = state;
+  p.setup = () => {
+    p.createCanvas(WIDTH, HEIGHT, p.WEBGL);
+    p.randomSeed(SEED);
+    // brush is auto-initialized by p5.brush v2 — no explicit init needed
+  };
+  p.draw = () => {
+    // WEBGL is center-origin; use ox/oy offsets for top-left positioning
+    const ox = -WIDTH / 2, oy = -HEIGHT / 2;
+    p.background(COLORS.background);
+    // generative algorithm here (use ox, oy when positioning elements)
+    p.noLoop(); // draw once — place at end of draw(), not in setup()
+  };
+  return { initializeSystem() { /* rebuild from state */ } };
+}`;
+    }
     return `function sketch(p, state) {
   const { WIDTH, HEIGHT, SEED, PARAMS, COLORS } = state;
   p.setup = () => {
@@ -453,8 +482,8 @@ export class P5RendererAdapter implements RendererAdapter {
     return [
       {
         name: "p5",
-        version: P5_CDN_VERSION,
-        cdnUrl: P5_CDN_URL,
+        version: "1.11.3",
+        cdnUrl: P5_CDN_URLS["1.x"]!,
       },
     ];
   }

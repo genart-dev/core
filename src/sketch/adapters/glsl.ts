@@ -16,6 +16,7 @@ import type {
 } from "../../types.js";
 import { generateCompositorScript, generateWebGLCompositorCode } from "../../design/iframe-compositor.js";
 import { generateInteractivePanel } from "../interactive-panel.js";
+import { generateLibraryScriptTags } from "./component-utils.js";
 
 /** Built-in uniforms that are not mapped from user parameters. */
 const BUILTIN_UNIFORMS = new Set([
@@ -511,6 +512,7 @@ export class GLSLRendererAdapter implements RendererAdapter {
     const { width, height } = sketch.canvas;
     const pixelDensity = sketch.canvas.pixelDensity ?? 1;
     const stateJson = JSON.stringify(sketch.state, null, 2);
+    const libTags = generateLibraryScriptTags(sketch.libraries);
 
     // Assemble full fragment source with component code injected
     const glslComponentCode = extractGLSLComponentCode(sketch.components);
@@ -540,7 +542,7 @@ export class GLSLRendererAdapter implements RendererAdapter {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(sketch.title)}</title>
-  <style>
+${libTags ? `${libTags}\n` : ""}  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; }
     canvas { display: block; max-width: 100vw; max-height: 100vh; }
@@ -623,6 +625,7 @@ ${colorBindings}
     const pixelDensity = sketch.canvas.pixelDensity ?? 1;
     const stateJson = JSON.stringify(sketch.state, null, 2);
     const panel = generateInteractivePanel(sketch);
+    const libTags = generateLibraryScriptTags(sketch.libraries);
 
     const glslComponentCode = extractGLSLComponentCode(sketch.components);
     const fullAlgorithm = glslComponentCode
@@ -651,7 +654,7 @@ ${colorBindings}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(sketch.title)} — Preview</title>
-  <style>
+${libTags ? `${libTags}\n` : ""}  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; }
     canvas { display: block; max-width: 100vw; max-height: 100vh; }

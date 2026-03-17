@@ -118,7 +118,7 @@ export interface RendererAdapter {
   /** Generate an interactive HTML page with parameter controls, seed navigation, and color pickers. */
   generateInteractiveHTML(sketch: SketchDefinition): string;
   /** Return a starter algorithm template for this renderer. */
-  getAlgorithmTemplate(): string;
+  getAlgorithmTemplate(libraries?: readonly { name: string }[]): string;
   /** List runtime dependencies needed for standalone export. */
   getRuntimeDependencies(): RuntimeDependency[];
 }

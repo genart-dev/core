@@ -236,6 +236,115 @@ describe("P5RendererAdapter", () => {
     });
   });
 
+  describe("library injection", () => {
+    const baseSketch = {
+      genart: "1.1",
+      id: "test",
+      title: "Test",
+      created: "2025-01-01T00:00:00Z",
+      modified: "2025-01-01T00:00:00Z",
+      canvas: { width: 800, height: 600 },
+      parameters: [],
+      colors: [],
+      state: { seed: 42, params: {}, colorPalette: [] },
+      algorithm: `function sketch(p, state) {
+        p.setup = () => { p.createCanvas(800, 600); };
+        p.draw = () => {};
+        return { initializeSystem() {} };
+      }`,
+    };
+
+    it("standalone HTML loads p5.js 1.x by default (no renderer.version)", () => {
+      const html = adapter.generateStandaloneHTML({
+        ...baseSketch,
+        renderer: { type: "p5" as const },
+      });
+      expect(html).toContain("cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js");
+      expect(html).not.toContain("p5.js@2");
+    });
+
+    it("standalone HTML loads p5.js 2.x when renderer.version is '2.x'", () => {
+      const html = adapter.generateStandaloneHTML({
+        ...baseSketch,
+        renderer: { type: "p5" as const, version: "2.x" },
+      });
+      expect(html).toContain("cdn.jsdelivr.net/npm/p5@2.0.3/lib/p5.min.js");
+      expect(html).not.toContain("cdnjs.cloudflare.com");
+    });
+
+    it("standalone HTML injects library script tag after p5 CDN tag", () => {
+      const html = adapter.generateStandaloneHTML({
+        ...baseSketch,
+        renderer: { type: "p5" as const, version: "2.x" },
+        libraries: [
+          {
+            name: "p5.brush",
+            version: "2.0.3-beta",
+            cdnUrl: "https://cdn.jsdelivr.net/npm/p5.brush@2.0.3-beta/dist/p5.brush.js",
+            globalName: "brush",
+            renderers: ["p5" as const],
+            license: "MIT",
+            copyright: "Copyright (c) 2024",
+            url: "https://github.com/acamposuribe/p5.brush",
+          },
+        ],
+      });
+      expect(html).toContain("p5.brush@2.0.3-beta/dist/p5.brush.js");
+      // library tag must appear after p5 CDN tag
+      const p5Pos = html.indexOf("p5@2.0.3");
+      const brushPos = html.indexOf("p5.brush@2.0.3-beta");
+      expect(p5Pos).toBeGreaterThan(-1);
+      expect(brushPos).toBeGreaterThan(p5Pos);
+    });
+
+    it("interactive HTML also injects library tags and p5.js 2.x", () => {
+      const html = adapter.generateInteractiveHTML({
+        ...baseSketch,
+        renderer: { type: "p5" as const, version: "2.x" },
+        libraries: [
+          {
+            name: "p5.brush",
+            version: "2.0.3-beta",
+            cdnUrl: "https://cdn.jsdelivr.net/npm/p5.brush@2.0.3-beta/dist/p5.brush.js",
+            globalName: "brush",
+            renderers: ["p5" as const],
+            license: "MIT",
+            copyright: "Copyright (c) 2024",
+            url: "https://github.com/acamposuribe/p5.brush",
+          },
+        ],
+      });
+      expect(html).toContain("cdn.jsdelivr.net/npm/p5@2.0.3/lib/p5.min.js");
+      expect(html).toContain("p5.brush@2.0.3-beta/dist/p5.brush.js");
+    });
+
+    it("sketch without libraries still loads p5.js 1.x (no regression)", () => {
+      const html = adapter.generateStandaloneHTML({
+        ...baseSketch,
+        renderer: { type: "p5" as const },
+      });
+      expect(html).toContain("p5.min.js");
+      expect(html).not.toContain("p5.brush");
+    });
+
+    it("getAlgorithmTemplate returns standard template when no libraries", () => {
+      const tmpl = adapter.getAlgorithmTemplate();
+      expect(tmpl).toContain("p.createCanvas(WIDTH, HEIGHT)");
+      expect(tmpl).not.toContain("WEBGL");
+    });
+
+    it("getAlgorithmTemplate returns WEBGL template when p5.brush in libraries", () => {
+      const tmpl = adapter.getAlgorithmTemplate([{ name: "p5.brush" }]);
+      expect(tmpl).toContain("p.WEBGL");
+      expect(tmpl).toContain("p.randomSeed(SEED)");
+      expect(tmpl).toContain("const ox = -WIDTH / 2, oy = -HEIGHT / 2");
+      expect(tmpl).toContain("p.noLoop()");
+      expect(tmpl).not.toContain("brush.load()");
+      expect(tmpl).not.toContain("brush.seed(");
+      expect(tmpl).not.toContain("p.translate(");
+    });
+  });
+
   describe("generateInteractiveHTML", () => {
     it("generates HTML with interactive panel controls", () => {
       const sketch = {

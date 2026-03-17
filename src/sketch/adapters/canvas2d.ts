@@ -13,7 +13,7 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
-import { extractComponentCode, extractSymbolData, generateDataInjection } from "./component-utils.js";
+import { extractComponentCode, extractSymbolData, generateDataInjection, generateLibraryScriptTags } from "./component-utils.js";
 import { generateInteractivePanel } from "../interactive-panel.js";
 import { generateCompositorScript, generateCompositorCall } from "../../design/iframe-compositor.js";
 
@@ -257,6 +257,7 @@ export class Canvas2DRendererAdapter implements RendererAdapter {
     const { width, height } = sketch.canvas;
     const pixelDensity = sketch.canvas.pixelDensity ?? 1;
     const stateJson = JSON.stringify(sketch.state, null, 2);
+    const libTags = generateLibraryScriptTags(sketch.libraries);
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -264,7 +265,7 @@ export class Canvas2DRendererAdapter implements RendererAdapter {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(sketch.title)}</title>
-  <style>
+${libTags ? `${libTags}\n` : ""}  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #111; }
     body { display: flex; justify-content: center; align-items: center; }
@@ -308,6 +309,7 @@ export class Canvas2DRendererAdapter implements RendererAdapter {
     const pixelDensity = sketch.canvas.pixelDensity ?? 1;
     const stateJson = JSON.stringify(sketch.state, null, 2);
     const panel = generateInteractivePanel(sketch);
+    const libTags = generateLibraryScriptTags(sketch.libraries);
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -315,7 +317,7 @@ export class Canvas2DRendererAdapter implements RendererAdapter {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(sketch.title)} — Preview</title>
-  <style>
+${libTags ? `${libTags}\n` : ""}  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #111; }
     body { display: flex; justify-content: center; align-items: center; }

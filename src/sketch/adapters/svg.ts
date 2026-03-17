@@ -13,7 +13,7 @@ import type {
   CaptureOptions,
   RuntimeDependency,
 } from "../../types.js";
-import { extractComponentCode, extractSymbolData, generateDataInjection } from "./component-utils.js";
+import { extractComponentCode, extractSymbolData, generateDataInjection, generateLibraryScriptTags } from "./component-utils.js";
 import { generateInteractivePanel } from "../interactive-panel.js";
 import { generateSVGLayerScript } from "../../design/iframe-compositor.js";
 
@@ -227,6 +227,7 @@ export class SVGRendererAdapter implements RendererAdapter {
   generateStandaloneHTML(sketch: SketchDefinition): string {
     const { width, height } = sketch.canvas;
     const stateJson = JSON.stringify(sketch.state, null, 2);
+    const libTags = generateLibraryScriptTags(sketch.libraries);
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -234,7 +235,7 @@ export class SVGRendererAdapter implements RendererAdapter {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(sketch.title)}</title>
-  <style>
+${libTags ? `${libTags}\n` : ""}  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; }
     #svg-container svg { display: block; width: 100%; height: auto; max-width: 100vw; max-height: 100vh; }
@@ -264,6 +265,7 @@ export class SVGRendererAdapter implements RendererAdapter {
     const { width, height } = sketch.canvas;
     const stateJson = JSON.stringify(sketch.state, null, 2);
     const panel = generateInteractivePanel(sketch);
+    const libTags = generateLibraryScriptTags(sketch.libraries);
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -271,7 +273,7 @@ export class SVGRendererAdapter implements RendererAdapter {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(sketch.title)} — Preview</title>
-  <style>
+${libTags ? `${libTags}\n` : ""}  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; }
     #svg-container svg { display: block; width: 100%; height: auto; max-width: 100vw; max-height: 100vh; }

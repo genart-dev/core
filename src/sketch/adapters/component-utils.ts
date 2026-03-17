@@ -2,7 +2,21 @@ import type {
   SketchComponentValue,
   SketchSymbolValue,
   SketchDataSource,
+  LibraryDependency,
 } from "@genart-dev/format";
+
+/**
+ * Generate `<script src="...">` tags for external library dependencies.
+ * Returns an empty string when there are no libraries.
+ * Tags are emitted one per line, suitable for insertion into an HTML `<head>`
+ * or `<body>` block directly after the renderer runtime script tag.
+ */
+export function generateLibraryScriptTags(
+  libraries?: readonly LibraryDependency[],
+): string {
+  if (!libraries || libraries.length === 0) return '';
+  return libraries.map(lib => `  <script src="${lib.cdnUrl}"></script>`).join('\n');
+}
 
 /**
  * Extract component source code from a SketchDefinition.components record.
