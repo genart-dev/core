@@ -19,6 +19,7 @@ import type {
 import { compile as compileGenArtScript } from "@genart-dev/genart-script";
 import { resolveComponents } from "@genart-dev/components";
 import { generateCompositorScript } from "../../design/iframe-compositor.js";
+import { generateLibraryScriptTags } from "./component-utils.js";
 
 // ---------------------------------------------------------------------------
 // Internal types
@@ -416,10 +417,11 @@ export class GenArtRendererAdapter implements RendererAdapter {
     const stateJson = JSON.stringify(sketch.state, null, 2);
     const compiledCode = result.code;
     const hasLayers = sketch.layers && sketch.layers.length > 0;
+    const libTags = generateLibraryScriptTags(sketch.libraries);
     return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>${sketch.title}</title>
-<style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh}canvas{display:block}</style>
+${libTags ? `${libTags}\n` : ""}<style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh}canvas{display:block}</style>
 </head>
 <body>
 <canvas id="c" width="${width}" height="${height}"></canvas>
@@ -512,6 +514,38 @@ function rndInt(a,b){return Math.floor(b===undefined?Math.random()*a:a+Math.rand
 var __rnd__ = {seed:function(){}};
 var __canvas__ = canvas;
 function buffer(bw, bh) { var c = document.createElement("canvas"); c.width = bw; c.height = bh; return c; }
+
+// Pixel sampling — works with HTMLCanvasElement and OffscreenCanvas
+var __pixelCache__ = new WeakMap();
+function __getPixels__(src) {
+  if (!src) return null;
+  var cached = __pixelCache__.get(src);
+  if (cached) return cached;
+  var c2 = src.getContext("2d");
+  if (!c2) return null;
+  var id = c2.getImageData(0, 0, src.width, src.height);
+  var entry = {data: id.data, w: src.width};
+  __pixelCache__.set(src, entry);
+  return entry;
+}
+function colorAt(src, x, y) {
+  var e = __getPixels__(src);
+  if (!e) return [0, 0, 0];
+  var i = (Math.round(y) * e.w + Math.round(x)) * 4;
+  return [e.data[i], e.data[i+1], e.data[i+2]];
+}
+function alphaAt(src, x, y) {
+  var e = __getPixels__(src);
+  if (!e) return 0;
+  var i = (Math.round(y) * e.w + Math.round(x)) * 4;
+  return e.data[i+3];
+}
+function pixelAt(src, x, y) {
+  var e = __getPixels__(src);
+  if (!e) return [0, 0, 0, 0];
+  var i = (Math.round(y) * e.w + Math.round(x)) * 4;
+  return [e.data[i], e.data[i+1], e.data[i+2], e.data[i+3]];
+}
 
 // --- components (from use "component-name" declarations) ---
 ${standaloneComponentCode}// renderLayers() bridge — calls compositor to get layers as offscreen canvas
