@@ -198,6 +198,19 @@ export class GenArtRendererAdapter implements RendererAdapter {
           }
           return null;
         },
+        // renderLayer(type) bridge — renders a single layer type to offscreen canvas
+        renderLayer: (layerType: string) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const win = window as any;
+          if (typeof win.__genart_compositeLayerToOffscreen === "function") {
+            return win.__genart_compositeLayerToOffscreen(
+              layerType,
+              canvas.width,
+              canvas.height,
+            );
+          }
+          return null;
+        },
       };
     }
 
@@ -502,6 +515,11 @@ var __renderLayersCalled__ = false;
 function renderLayers() {
   __renderLayersCalled__ = true;
   if (typeof window.__genart_compositeToOffscreen === "function") return window.__genart_compositeToOffscreen(${width}, ${height});
+  return null;
+}
+function renderLayer(layerType) {
+  __renderLayersCalled__ = true;
+  if (typeof window.__genart_compositeLayerToOffscreen === "function") return window.__genart_compositeLayerToOffscreen(layerType, ${width}, ${height});
   return null;
 }
 

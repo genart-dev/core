@@ -784,6 +784,29 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
     return oc;
   };
 
+  // --- Single-layer offscreen rendering ---
+  // Renders layers matching a given type (e.g. "terrain:sky") to an offscreen canvas.
+  // Used by impressionist/painterly sketches that need per-layer bristle-stroke passes.
+  window.__genart_compositeLayerToOffscreen = function(layerType, width, height) {
+    if (!__genart_layers || __genart_layers.length === 0) return null;
+    var matching = [];
+    for (var i = 0; i < __genart_layers.length; i++) {
+      if (__genart_layers[i].type === layerType) matching.push(__genart_layers[i]);
+    }
+    if (matching.length === 0) return null;
+    var oc = new OffscreenCanvas(width, height);
+    var ctx = oc.getContext("2d");
+    if (!ctx) return null;
+    __logW = width;
+    __logH = height;
+    __maskSourceIds = __collectMaskSourceIds(__genart_layers);
+    __maskStore = {};
+    for (var j = 0; j < matching.length; j++) {
+      compositeLayer(matching[j], ctx);
+    }
+    return oc;
+  };
+
   // --- postMessage listener for live layer updates ---
   window.addEventListener("message", function(e) {
     if (e.data && e.data.type === "design:updateLayers") {
