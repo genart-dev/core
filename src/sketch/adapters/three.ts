@@ -278,7 +278,7 @@ ${libTags ? `${libTags}\n` : ""}  <style>
 </head>
 <body>
   <div id="canvas-container"></div>
-  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers, sketch.canvas.width, sketch.canvas.height) : ""}
   <script type="module">
     import * as THREE from '${THREE_CDN_URL}';
 
@@ -334,7 +334,7 @@ ${libTags ? `${libTags}\n` : ""}  <style>
 </head>
 <body>
   <div id="canvas-container"></div>
-  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers, sketch.canvas.width, sketch.canvas.height) : ""}
   ${panel.html}
   <script type="module">
     import * as THREE from '${THREE_CDN_URL}';

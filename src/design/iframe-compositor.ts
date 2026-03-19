@@ -21,7 +21,11 @@ import { GENERATED_RENDERERS_CODE } from "./generated-renderers/index.js";
  * @param layers - Design layers to embed directly (avoids JSON tag parsing)
  * @returns HTML `<script>` string to inject into standalone HTML
  */
-export function generateCompositorScript(layers: readonly DesignLayer[]): string {
+export function generateCompositorScript(
+  layers: readonly DesignLayer[],
+  logicalWidth?: number,
+  logicalHeight?: number,
+): string {
   if (!layers || layers.length === 0) return "";
 
   const layersJson = JSON.stringify(layers);
@@ -31,6 +35,8 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
   "use strict";
 
   var __genart_layers = ${layersJson};
+  var __genart_logicalWidth = ${logicalWidth ?? 0};
+  var __genart_logicalHeight = ${logicalHeight ?? 0};
 
   // --- Expose __genart_design API for algorithm access ---
   window.__genart_design = {
@@ -512,7 +518,8 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
   // pixel-level lerp between original and modified.
   var MODIFIER_TYPES = {
     "painting:watercolor": 1, "painting:charcoal": 1, "painting:ink": 1,
-    "painting:fill": 1, "painting:stroke": 1,
+    "painting:fill": 1, "painting:stroke": 1, "painting:scene": 1,
+    "painting:bristle-dab": 1, "painting:bristle-stroke": 1,
     "adjust:hsl": 1, "adjust:levels": 1, "adjust:curves": 1,
     "filter:grain": 1, "filter:chromatic-aberration": 1,
     "filter:duotone": 1, "filter:blur": 1
@@ -708,11 +715,11 @@ export function generateCompositorScript(layers: readonly DesignLayer[]): string
   // resolution and then draw the result back scaled to physical size.
   function __renderLayers(canvas, ctx) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    var logW = canvas.width, logH = canvas.height;
-    for (var i = 0; i < __genart_layers.length; i++) {
-      var lt = __genart_layers[i].transform;
-      if (lt.width > 0 && lt.height > 0) { logW = lt.width; logH = lt.height; break; }
-    }
+    // Use explicitly provided logical dimensions; fall back to canvas pixel size.
+    // The old heuristic (first layer's transform width) was wrong when layers
+    // are sub-panels that don't cover the full canvas.
+    var logW = __genart_logicalWidth > 0 ? __genart_logicalWidth : canvas.width;
+    var logH = __genart_logicalHeight > 0 ? __genart_logicalHeight : canvas.height;
 
     // Pre-scan for mask sources and reset mask store each render pass
     __logW = logW;

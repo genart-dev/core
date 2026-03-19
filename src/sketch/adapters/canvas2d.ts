@@ -274,7 +274,7 @@ ${libTags ? `${libTags}\n` : ""}  <style>
 </head>
 <body>
   <canvas id="canvas" width="${width * pixelDensity}" height="${height * pixelDensity}" style="width:${width}px;height:${height}px;"></canvas>
-  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers, sketch.canvas.width, sketch.canvas.height) : ""}
   <script>
     try {
       const state = ${stateJson};
@@ -327,7 +327,7 @@ ${libTags ? `${libTags}\n` : ""}  <style>
 </head>
 <body>
   <canvas id="canvas" width="${width * pixelDensity}" height="${height * pixelDensity}" style="width:${width}px;height:${height}px;"></canvas>
-  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers) : ""}
+  ${sketch.layers && sketch.layers.length > 0 ? generateCompositorScript(sketch.layers, sketch.canvas.width, sketch.canvas.height) : ""}
   ${panel.html}
   <script>
     var state = ${stateJson};

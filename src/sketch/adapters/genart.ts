@@ -425,7 +425,7 @@ ${libTags ? `${libTags}\n` : ""}<style>body{margin:0;background:#000;display:fle
 </head>
 <body>
 <canvas id="c" width="${width}" height="${height}"></canvas>
-${hasLayers ? generateCompositorScript(sketch.layers!) : ""}
+${hasLayers ? generateCompositorScript(sketch.layers!, sketch.canvas.width, sketch.canvas.height) : ""}
 <script>
 (function() {
 const canvas = document.getElementById("c");
