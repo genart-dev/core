@@ -9,11 +9,17 @@ importers:
   .:
     dependencies:
       '@genart-dev/components':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.1.4
+        version: 0.1.4
       '@genart-dev/format':
-        specifier: ^0.5.3
-        version: 0.5.4
+        specifier: ^0.7.0
+        version: 0.7.0
+      '@genart-dev/genart-script':
+        specifier: ^0.1.2
+        version: 0.1.5
+      '@genart-dev/illustration':
+        specifier: ^0.3.0
+        version: 0.3.0
     devDependencies:
       '@types/node':
         specifier: ^25.3.0
@@ -192,14 +198,20 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@genart-dev/components@0.1.0':
-    resolution: {integrity: sha512-UQARaUB/1v4CeYwqS/EGoxZ2adpbZ5QX6u+v3gxWbSEMbGT4nulChAp8kEJMAmUuXpLUL6amQnaYj9nE6RNxrg==}
+  '@genart-dev/components@0.1.4':
+    resolution: {integrity: sha512-eIuYLI7FnEEVyTqZ5IvTM+4svzPqdotQtE/28T23jczB7KBzrfnntHV0VQGRG6AZfz+WLmbPm/ytYsjPHFfo2A==}
 
-  '@genart-dev/format@0.2.0':
-    resolution: {integrity: sha512-zSeFfrJ9t8nZ/093b+0XLb8VElSSW3tx1hQZJSRsRlkupxByCbERde6kMvxH6USBuZ3truEanIIOrWDXB+PnRQ==}
+  '@genart-dev/format@0.6.1':
+    resolution: {integrity: sha512-Ed1roZFTH/2P8hzlcg9826HdyrA6xJpPwmO2xeawStgnW63DXLxAmCMofkehn5W5Fhd2S42ghWqctkTxt38QjQ==}
 
-  '@genart-dev/format@0.5.4':
-    resolution: {integrity: sha512-kNTo6J+KpN6my7LxdO2n7OgNiDQoEWkNTcx8zEPv5RazWHsHpLjskDwZOFpvP8TKIbUq7jW4n+fbbfgy2bvNXw==}
+  '@genart-dev/format@0.7.0':
+    resolution: {integrity: sha512-IwUZmJuKGWEds800HsAKmS8uWlr5XRSbI//q+iiYhliph5vTydMnNeiIj7B7Uq2/46gDfISvzADTt/vRCvzUTg==}
+
+  '@genart-dev/genart-script@0.1.5':
+    resolution: {integrity: sha512-8yTmu5dkrbAYyshhJNmBDkcZeHmdoMWCxJ6zhCjFy2qgXHGgQZ0gyMMiVFnkmnEoMHixvpuHTaNLbmE0Y+MH3g==}
+
+  '@genart-dev/illustration@0.3.0':
+    resolution: {integrity: sha512-vvf9zOKVbFUHCJS3tZLZT9Wsn9mgVoRmaeJ0yjr4QDyHAsiwVb6dTAo5jj8wBOzuJdfi6iylXBV4OGhP2Tt/GQ==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -841,13 +853,17 @@ snapshots:
   '@esbuild/win32-x64@0.27.3':
     optional: true
 
-  '@genart-dev/components@0.1.0':
+  '@genart-dev/components@0.1.4':
     dependencies:
-      '@genart-dev/format': 0.2.0
+      '@genart-dev/format': 0.6.1
 
-  '@genart-dev/format@0.2.0': {}
+  '@genart-dev/format@0.6.1': {}
 
-  '@genart-dev/format@0.5.4': {}
+  '@genart-dev/format@0.7.0': {}
+
+  '@genart-dev/genart-script@0.1.5': {}
+
+  '@genart-dev/illustration@0.3.0': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
