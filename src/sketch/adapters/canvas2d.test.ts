@@ -176,8 +176,8 @@ describe("Canvas2DRendererAdapter", () => {
       expect(html).toContain("Preview");
       expect(html).toContain('id="genart-panel"');
       expect(html).toContain('id="gp-seed-val"');
-      expect(html).toContain('id="gp-param-density"');
-      expect(html).toContain('id="gp-color-0"');
+      expect(html).toContain('id="gp-pi-density"');
+      expect(html).toContain('id="gp-ci-0"');
       expect(html).toContain("__gp_rerender");
       expect(html).toContain("__gp_render");
     });
