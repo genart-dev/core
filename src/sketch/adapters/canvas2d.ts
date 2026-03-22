@@ -267,9 +267,10 @@ export class Canvas2DRendererAdapter implements RendererAdapter {
   <title>${escapeHtml(sketch.title)}</title>
 ${libTags ? `${libTags}\n` : ""}  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #111; }
-    body { display: flex; justify-content: center; align-items: center; }
-    canvas { display: block; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg-primary, #0A0A0A); }
+    body { display: flex; }
+    #canvas-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1rem; min-width: 0; }
+    canvas { display: block; max-width: 100%; max-height: calc(100vh - 2rem); }
   </style>
 </head>
 <body>
@@ -318,11 +319,8 @@ ${libTags ? `${libTags}\n` : ""}  <style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(sketch.title)} — Preview</title>
 ${libTags ? `${libTags}\n` : ""}  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #111; }
-    body { display: flex; justify-content: center; align-items: center; }
-    canvas { display: block; }
     ${panel.css}
+    body { overflow: hidden; }
   </style>
 </head>
 <body>

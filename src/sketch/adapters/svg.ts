@@ -237,8 +237,9 @@ export class SVGRendererAdapter implements RendererAdapter {
   <title>${escapeHtml(sketch.title)}</title>
 ${libTags ? `${libTags}\n` : ""}  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; }
-    #svg-container svg { display: block; width: 100%; height: auto; max-width: 100vw; max-height: 100vh; }
+    body { display: flex; min-height: 100vh; background: var(--bg-primary, #0A0A0A); }
+    #svg-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1rem; min-width: 0; }
+    #svg-container svg { display: block; width: 100%; height: auto; max-width: 100%; max-height: calc(100vh - 2rem); }
   </style>
 </head>
 <body>
@@ -274,10 +275,9 @@ ${libTags ? `${libTags}\n` : ""}  <style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(sketch.title)} — Preview</title>
 ${libTags ? `${libTags}\n` : ""}  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; }
-    #svg-container svg { display: block; width: 100%; height: auto; max-width: 100vw; max-height: 100vh; }
     ${panel.css}
+    #svg-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1rem; min-width: 0; }
+    #svg-container svg { display: block; width: 100%; height: auto; max-width: 100%; max-height: calc(100vh - 2rem); }
   </style>
 </head>
 <body>

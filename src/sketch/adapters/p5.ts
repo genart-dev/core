@@ -291,8 +291,9 @@ export class P5RendererAdapter implements RendererAdapter {
   <script src="${getP5CdnUrl(sketch)}"></script>
 ${libTags ? `${libTags}\n` : ""}  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; }
-    #canvas-container canvas { display: block; max-width: 100vw; max-height: 100vh; }
+    body { display: flex; min-height: 100vh; background: var(--bg-primary, #0A0A0A); }
+    #canvas-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1rem; min-width: 0; }
+    #canvas-container canvas { display: block; max-width: 100%; max-height: calc(100vh - 2rem); }
   </style>
 </head>
 <body>
@@ -386,9 +387,6 @@ ${libTags ? `${libTags}\n` : ""}  <style>
   <title>${escapeHtml(sketch.title)} — Preview</title>
   <script src="${getP5CdnUrl(sketch)}"></script>
 ${libTags ? `${libTags}\n` : ""}  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; }
-    #canvas-container canvas { display: block; max-width: 100vw; max-height: 100vh; }
     ${panel.css}
   </style>
 </head>

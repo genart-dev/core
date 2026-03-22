@@ -33,6 +33,12 @@ function getRendererColor(renderer: string): string {
 
 function generatePanelCSS(): string {
   return `
+    /* ─── Shared layout ─── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { display: flex; min-height: 100vh; background: var(--bg-primary, #0A0A0A); }
+    #canvas-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1rem; min-width: 0; overflow: hidden; }
+    #canvas-container canvas { display: block; max-width: 100%; max-height: calc(100vh - 2rem); }
+
     /* ─── Theme tokens (genart.dev design system) ─── */
     :root {
       --bg-primary: #0A0A0A;
