@@ -60,6 +60,7 @@ export type {
   PluginContext,
   PluginLogger,
   PluginHostInfo,
+  CameraResources,
   RenderResources,
   PluginRegistry,
   PrefixedMcpTool,

@@ -1,4 +1,5 @@
 import type { DesignLayer, BlendMode, MaskMode, LayerTransform } from "@genart-dev/format";
+import type { Camera, Mat4, Vec2, Vec3, Viewport, ProjectedPoint } from "@genart-dev/projection";
 
 /** JSON Schema (subset used for MCP tool input schemas). */
 export type JsonSchema = Record<string, unknown>;
@@ -393,11 +394,29 @@ export interface PluginHostInfo {
 // 10. Render Resources
 // ---------------------------------------------------------------------------
 
+/** Camera resources precomputed for the current render pass. */
+export interface CameraResources {
+  /** The active camera. */
+  readonly camera: Camera;
+  /** Precomputed view-projection matrix. */
+  readonly viewProjection: Mat4;
+  /** Viewport matching the layer bounds. */
+  readonly viewport: Viewport;
+  /** Project a world point to screen space (bound to this camera + viewport). */
+  project(point: Vec3): ProjectedPoint;
+  /** Precomputed horizon screen Y. */
+  readonly horizonY: number;
+  /** Derived vanishing points from camera orientation. */
+  readonly vanishingPoints: { left?: Vec2; right?: Vec2; vertical?: Vec2 };
+}
+
 export interface RenderResources {
   getFont(family: string): FontFace | null;
   getImage(assetId: string): HTMLImageElement | ImageBitmap | null;
   readonly theme: "dark" | "light";
   readonly pixelRatio: number;
+  /** Camera projection resources. Present when a perspective:camera layer exists. */
+  readonly camera?: CameraResources;
 }
 
 // ---------------------------------------------------------------------------

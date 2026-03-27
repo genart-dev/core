@@ -1,6 +1,6 @@
 {
   "name": "@genart-dev/core",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Renderer adapters, skill registry, and runtime interfaces for genart.dev",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -62,7 +62,8 @@
     "@genart-dev/components": "^0.1.4",
     "@genart-dev/format": "^0.7.0",
     "@genart-dev/genart-script": "^0.1.2",
-    "@genart-dev/illustration": "^0.3.0"
+    "@genart-dev/illustration": "^0.3.0",
+    "@genart-dev/projection": "^0.1.0"
   },
   "peerDependencies": {
     "esbuild": ">=0.17.0"
