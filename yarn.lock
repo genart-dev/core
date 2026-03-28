@@ -210,9 +210,10 @@ __metadata:
   resolution: "@genart-dev/core@workspace:."
   dependencies:
     "@genart-dev/components": "npm:^0.1.4"
-    "@genart-dev/format": "npm:^0.6.0"
+    "@genart-dev/format": "npm:^0.7.0"
     "@genart-dev/genart-script": "npm:^0.1.2"
     "@genart-dev/illustration": "npm:^0.3.0"
+    "@genart-dev/projection": "npm:^0.1.0"
     "@types/node": "npm:^25.3.0"
     esbuild: "npm:^0.27.3"
     tsup: "npm:^8.3.6"
@@ -234,6 +235,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@genart-dev/format@npm:^0.7.0":
+  version: 0.7.0
+  resolution: "@genart-dev/format@npm:0.7.0"
+  checksum: 10c0/8e4782616c1be2e6bebf8f324ee3692f6bb6d56a5008bbc27aadb178ae055bc27b246378eb7ca47f5a8aad8f8a1ab67882ddd3552e850ec4e83544570539990a
+  languageName: node
+  linkType: hard
+
 "@genart-dev/genart-script@npm:^0.1.2":
   version: 0.1.2
   resolution: "@genart-dev/genart-script@npm:0.1.2"
@@ -245,6 +253,13 @@ __metadata:
   version: 0.3.0
   resolution: "@genart-dev/illustration@npm:0.3.0"
   checksum: 10c0/1f5a6e2098a044f3c04d97bdf96febdefb777d4da849a68d9365c9a51a20ab126ebec57f99a759e90ed241d1eb59108c5fa4006e60c15df528f0da8d0749bc0f
+  languageName: node
+  linkType: hard
+
+"@genart-dev/projection@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "@genart-dev/projection@npm:0.1.0"
+  checksum: 10c0/5a484ca0f6dca988c79d2ff644e952cad145004bff3df4e7790bda024f492d3fd90cdd43ca5c78929c575e49909740cdacf11db2c6993d52d480f162ca02ae59
   languageName: node
   linkType: hard
 
