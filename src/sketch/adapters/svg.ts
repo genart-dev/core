@@ -236,10 +236,11 @@ export class SVGRendererAdapter implements RendererAdapter {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(sketch.title)}</title>
 ${libTags ? `${libTags}\n` : ""}  <style>
+    /* Exact-size presentation: this page is what the headless capture screenshots, so the canvas must occupy its declared WxH precisely. A viewport-minus-margin clamp or container padding shrinks it and leaves the page background showing as a strip. */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { display: flex; min-height: 100vh; background: var(--bg-primary, #0A0A0A); }
-    #svg-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1rem; min-width: 0; }
-    #svg-container svg { display: block; width: 100%; height: auto; max-width: 100%; max-height: calc(100vh - 2rem); }
+    #svg-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 0; min-width: 0; }
+    #svg-container svg { display: block; width: 100%; height: auto; max-width: 100%; max-height: 100%; }
   </style>
 </head>
 <body>
@@ -276,8 +277,8 @@ ${libTags ? `${libTags}\n` : ""}  <style>
   <title>${escapeHtml(sketch.title)} — Preview</title>
 ${libTags ? `${libTags}\n` : ""}  <style>
     ${panel.css}
-    #svg-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 1rem; min-width: 0; }
-    #svg-container svg { display: block; width: 100%; height: auto; max-width: 100%; max-height: calc(100vh - 2rem); }
+    #svg-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 0; min-width: 0; }
+    #svg-container svg { display: block; width: 100%; height: auto; max-width: 100%; max-height: 100%; }
   </style>
 </head>
 <body>
