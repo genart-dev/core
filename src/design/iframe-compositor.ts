@@ -504,6 +504,54 @@ export function generateCompositorScript(
   };
 
   // =================================================================
+  // Shared render resources
+  // =================================================================
+  // Passed to every generated plugin renderer as its RenderResources
+  // argument. Layers that need scene-wide state (currently the camera, read
+  // by architecture:building) get it from here; a renderer that asks for a
+  // key nobody populated still just sees undefined.
+
+  var RESOURCES = {};
+
+  /**
+   * Build a projection Camera from a perspective:camera layer's properties.
+   * Mirrors @genart-dev/projection's createCamera defaults so a partially
+   * specified camera layer behaves the same as one built in code.
+   */
+  function __cameraFromLayer(p) {
+    return {
+      position: { x: +p.positionX || 0, y: +p.positionY || 0, z: +p.positionZ || 0 },
+      target: { x: +p.targetX || 0, y: +p.targetY || 0, z: +p.targetZ || 0 },
+      up: { x: 0, y: 1, z: 0 },
+      fov: typeof p.fov === "number" ? p.fov : 60,
+      near: typeof p.near === "number" ? p.near : 0.1,
+      far: typeof p.far === "number" ? p.far : 10000,
+      projection: p.projectionType === "orthographic" ? "orthographic" : "perspective",
+      orthoScale: typeof p.orthoScale === "number" ? p.orthoScale : undefined
+    };
+  }
+
+  /** Find the first visible perspective:camera layer, at any nesting depth. */
+  function __findCameraLayer(layers) {
+    for (var i = 0; i < layers.length; i++) {
+      var l = layers[i];
+      if (l.type === "perspective:camera" && l.visible !== false) return l;
+      if (l.children && l.children.length) {
+        var found = __findCameraLayer(l.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  (function() {
+    var camLayer = __findCameraLayer(__genart_layers);
+    if (camLayer && camLayer.properties) {
+      RESOURCES.camera = __cameraFromLayer(camLayer.properties);
+    }
+  })();
+
+  // =================================================================
   // Generated plugin renderers (ADR 059) — injected below
   // =================================================================
 ` + GENERATED_RENDERERS_CODE + `

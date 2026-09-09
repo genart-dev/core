@@ -177,7 +177,7 @@ function generatePluginIIFE(pluginDir: string, typeIds: string[], inlineMap: Map
         `    var lt_${sanitize(id)} = __plugin.layerTypes.find(function(t) { return t.typeId === "${id}"; });\n` +
         `    if (lt_${sanitize(id)}) __R["${id}"] = (function(lt) {\n` +
         `      return function(ctx, properties, bounds) {\n` +
-        `        lt.render(properties, ctx, bounds, {});\n` +
+        `        lt.render(properties, ctx, bounds, RESOURCES);\n` +
         `      };\n` +
         `    })(lt_${sanitize(id)});`
     )
