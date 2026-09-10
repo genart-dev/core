@@ -72,6 +72,8 @@ const PLUGIN_DIRS = [
   "plugin-atmosphere",
   "plugin-water",
   "plugin-architecture",
+  "plugin-plants",
+  "plugin-trace",
 ];
 
 // ---------------------------------------------------------------------------
