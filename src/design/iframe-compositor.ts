@@ -305,7 +305,7 @@ export function generateCompositorScript(
 
   // --- filter:blur ---
   function renderBlur(ctx, props, b) {
-    var radius = props.radius !== undefined ? props.radius : 4;
+    var radius = (props.radius !== undefined ? props.radius : 4) * (b.scale || 1);
     if (radius <= 0) return;
     var w = Math.ceil(b.width), h = Math.ceil(b.height);
     if (w <= 0 || h <= 0) return;
@@ -323,7 +323,10 @@ export function generateCompositorScript(
   // --- filter:grain ---
   function renderGrain(ctx, props, b) {
     var intensity = props.intensity !== undefined ? props.intensity : 0.3;
-    var grainSize = props.size || 1;
+    // Device pixels per layout unit (ADR 111): a grain speck keeps its size on
+    // the paper rather than shrinking as the canvas is rendered larger.
+    var gScale = b.scale || 1;
+    var grainSize = (props.size || 1) * gScale;
     var seed = props.seed || 0;
     var monochrome = props.monochrome !== undefined ? props.monochrome : true;
     if (intensity <= 0) return;
@@ -384,7 +387,8 @@ export function generateCompositorScript(
     if (intensity <= 0 || (offsetX === 0 && offsetY === 0)) return;
     var w = Math.ceil(b.width), h = Math.ceil(b.height);
     if (w <= 0 || h <= 0) return;
-    var ox = Math.round(offsetX * intensity), oy = Math.round(offsetY * intensity);
+    var caScale = b.scale || 1;
+    var ox = Math.round(offsetX * intensity * caScale), oy = Math.round(offsetY * intensity * caScale);
     var imgData = ctx.getImageData(b.x, b.y, w, h);
     var src = new Uint8ClampedArray(imgData.data);
     var dst = imgData.data;
