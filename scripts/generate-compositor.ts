@@ -199,6 +199,16 @@ function buildInlineableRequireMap(): Map<string, Record<string, unknown>> {
     map.set("@genart-dev/illustration", require(illustrationCjs) as Record<string, unknown>);
   }
 
+  // @genart-dev/plugin-painting — plugin-plants' watercolor and ink styles draw
+  // with its brush helpers. tsup externalises a package listed in dependencies,
+  // so the plugin's own bundle keeps a require() for it, and without this the
+  // stub below hands back {} and the first call throws inside the render.
+  const paintingCjs = resolve(PLUGINS_DIR, "plugin-painting/dist/index.cjs");
+  if (existsSync(paintingCjs)) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    map.set("@genart-dev/plugin-painting", require(paintingCjs) as Record<string, unknown>);
+  }
+
   return map;
 }
 
