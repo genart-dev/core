@@ -12,6 +12,7 @@ import type {
   SketchInstance,
   CaptureOptions,
   RuntimeDependency,
+  StandaloneHtmlOptions,
 } from "../../types.js";
 import { extractComponentCode, extractSymbolData, generateDataInjection, generateLibraryScriptTags } from "./component-utils.js";
 import { generateInteractivePanel } from "../interactive-panel.js";
@@ -253,9 +254,16 @@ export class Canvas2DRendererAdapter implements RendererAdapter {
     }
   }
 
-  generateStandaloneHTML(sketch: SketchDefinition): string {
+  generateStandaloneHTML(
+    sketch: SketchDefinition,
+    options?: StandaloneHtmlOptions,
+  ): string {
     const { width, height } = sketch.canvas;
-    const pixelDensity = sketch.canvas.pixelDensity ?? 1;
+    // The backing store is sized by the sketch's own density times the scale
+    // the render asks for (ADR 111). The CSS size stays the layout size, so a
+    // capture at the same device scale factor lands one canvas pixel on one
+    // captured pixel.
+    const pixelDensity = (sketch.canvas.pixelDensity ?? 1) * (options?.renderScale ?? 1);
     const stateJson = JSON.stringify(sketch.state, null, 2);
     const libTags = generateLibraryScriptTags(sketch.libraries);
 

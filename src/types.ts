@@ -87,6 +87,18 @@ export interface CaptureOptions {
  * Renderer adapter — pluggable rendering engine interface.
  * Each renderer type (p5, Three.js, GLSL, Canvas 2D, SVG) implements this.
  */
+
+/** Options for standalone HTML generation. */
+export interface StandaloneHtmlOptions {
+  /**
+   * Device pixels per layout unit to render at (ADR 111), multiplied with the
+   * sketch's own `canvas.pixelDensity`. The canvas backing store is sized by
+   * the product, so the layer stack composites at that resolution rather than
+   * being drawn at layout size and enlarged by the capture. Default 1.
+   */
+  readonly renderScale?: number;
+}
+
 export interface RendererAdapter {
   /** The renderer type this adapter handles. */
   readonly type: RendererType;
@@ -114,7 +126,10 @@ export interface RendererAdapter {
     options?: CaptureOptions,
   ): Promise<Uint8Array | Blob>;
   /** Generate a standalone HTML page embedding the sketch. */
-  generateStandaloneHTML(sketch: SketchDefinition): string;
+  generateStandaloneHTML(
+    sketch: SketchDefinition,
+    options?: StandaloneHtmlOptions,
+  ): string;
   /** Generate an interactive HTML page with parameter controls, seed navigation, and color pickers. */
   generateInteractiveHTML(sketch: SketchDefinition): string;
   /** Return a starter algorithm template for this renderer. */

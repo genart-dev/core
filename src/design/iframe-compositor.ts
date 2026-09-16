@@ -13,7 +13,10 @@
 
 import type { DesignLayer } from "@genart-dev/format";
 import { GENERATED_RENDERERS_CODE } from "./generated-renderers/index.js";
-import { READS_COMPOSITE_TYPES } from "./generated-renderers/contracts.js";
+import {
+  READS_COMPOSITE_TYPES,
+  DEVICE_RESOLUTION_TYPES,
+} from "./generated-renderers/contracts.js";
 
 /**
  * Generate a self-contained `<script>` block that composites design layers
@@ -573,6 +576,18 @@ export function generateCompositorScript(
     Object.fromEntries(READS_COMPOSITE_TYPES.map((t) => [t, 1])),
   )};
 
+  // Layer types that declare resolution: "device" (ADR 111). They are handed
+  // bounds in device pixels plus bounds.scale, and draw on the physical grid.
+  // Everything else keeps a logical-unit buffer that is scaled up, which is
+  // what the whole picture used to do.
+  var DEVICE_TYPES = ${JSON.stringify(
+    Object.fromEntries(DEVICE_RESOLUTION_TYPES.map((t) => [t, 1])),
+  )};
+
+  // Device pixels per layout unit for the pass being composited. Set by
+  // __renderLayers; 1 whenever the canvas is at its logical size.
+  var __scale = 1;
+
   // OffscreenCanvas cache — avoids per-frame allocation for additive layers.
   // Keyed by "layerId:WxH" so each layer reuses its own canvas.
   var __offscreenCache = {};
@@ -621,6 +636,20 @@ export function generateCompositorScript(
     ctx.putImageData(layerData, 0, 0);
   }
 
+  // True if this layer, or anything inside it, reads the composite while still
+  // working in logical units. Such a layer cannot be given a device-resolution
+  // canvas, because getImageData ignores the transform that would map it back.
+  function __needsLogicalComposite(layer) {
+    if (!layer.visible) return false;
+    if (layer.children && layer.children.length > 0) {
+      for (var i = 0; i < layer.children.length; i++) {
+        if (__needsLogicalComposite(layer.children[i])) return true;
+      }
+      return false;
+    }
+    return MODIFIER_TYPES[layer.type] === 1 && DEVICE_TYPES[layer.type] !== 1;
+  }
+
   function compositeLayer(layer, ctx) {
     if (!layer.visible) return;
 
@@ -652,20 +681,33 @@ export function generateCompositorScript(
     var h = Math.ceil(t.height);
     if (w <= 0 || h <= 0) return;
 
+    var s = __scale;
+    var isDevice = DEVICE_TYPES[layer.type] === 1;
+
     if (MODIFIER_TYPES[layer.type]) {
       // --- Modifier path ---
       // Render directly on canvas (renderer needs existing pixels).
       // Then apply opacity as a pixel-level lerp between original and modified.
-      var bounds = { x: t.x, y: t.y, width: w, height: h };
+      // __renderLayers drops to a logical canvas before compositing any layer
+      // that reads the composite in logical units, so s is 1 here unless the
+      // type declares resolution: "device".
+      var mw = isDevice ? Math.ceil(w * s) : w;
+      var mh = isDevice ? Math.ceil(h * s) : h;
+      var mx = isDevice ? Math.round(t.x * s) : t.x;
+      var my = isDevice ? Math.round(t.y * s) : t.y;
+      var bounds = {
+        x: mx, y: my, width: mw, height: mh,
+        scale: isDevice ? s : 1, deviceWidth: mw, deviceHeight: mh,
+      };
       var origData = null;
       if (layer.opacity < 1) {
-        origData = ctx.getImageData(t.x, t.y, w, h);
+        origData = ctx.getImageData(mx, my, mw, mh);
       }
 
       render(ctx, layer.properties, bounds);
 
       if (origData && layer.opacity < 1) {
-        var modData = ctx.getImageData(t.x, t.y, w, h);
+        var modData = ctx.getImageData(mx, my, mw, mh);
         var orig = origData.data;
         var mod = modData.data;
         var a = layer.opacity;
@@ -676,7 +718,7 @@ export function generateCompositorScript(
           mod[pi + 2] = orig[pi + 2] * invA + mod[pi + 2] * a + 0.5 | 0;
           mod[pi + 3] = orig[pi + 3] * invA + mod[pi + 3] * a + 0.5 | 0;
         }
-        ctx.putImageData(modData, t.x, t.y);
+        ctx.putImageData(modData, mx, my);
       }
     } else {
       // --- Additive path ---
@@ -684,11 +726,23 @@ export function generateCompositorScript(
       // Renderers that use putImageData (e.g. textures:paper) create their own
       // ImageData, so the offscreen starts blank. drawImage then composites the
       // result with proper blend mode, opacity, and transforms.
-      var cacheKey = (layer.id || layer.type) + ":" + w + "x" + h;
-      var layerOff = getCachedOffscreen(cacheKey, w, h);
+      // A masked layer, or a layer used as a mask source, renders into the
+      // canvas-sized mask offscreens below, which are in logical units (ADR
+      // 083). Keep those layers logical whatever they declare.
+      var masked = (__maskSourceIds && __maskSourceIds.has(layer.id))
+        || (layer.maskLayerId && layer.maskLayerId !== layer.id);
+      var deviceBuffer = isDevice && s !== 1 && !masked;
+      var bw = deviceBuffer ? Math.ceil(w * s) : w;
+      var bh = deviceBuffer ? Math.ceil(h * s) : h;
+
+      var cacheKey = (layer.id || layer.type) + ":" + bw + "x" + bh;
+      var layerOff = getCachedOffscreen(cacheKey, bw, bh);
       var layerCtx = layerOff.getContext("2d");
 
-      var localBounds = { x: 0, y: 0, width: w, height: h };
+      var localBounds = {
+        x: 0, y: 0, width: bw, height: bh,
+        scale: deviceBuffer ? s : 1, deviceWidth: bw, deviceHeight: bh,
+      };
       render(layerCtx, layer.properties, localBounds);
 
       // If this layer is a mask source, render it again in canvas-coordinate space
@@ -727,6 +781,7 @@ export function generateCompositorScript(
         ctx.save();
         ctx.globalAlpha = layer.opacity;
         ctx.globalCompositeOperation = toCompositeOp(layer.blendMode);
+        if (s !== 1) ctx.scale(s, s);
         ctx.drawImage(maskedOff, 0, 0);
         ctx.restore();
         return;
@@ -736,6 +791,10 @@ export function generateCompositorScript(
       ctx.globalAlpha = layer.opacity;
       ctx.globalCompositeOperation = toCompositeOp(layer.blendMode);
 
+      // Everything below is in logical units; the device scale is applied once
+      // here, so a logical buffer is drawn up and a device buffer lands 1:1.
+      if (s !== 1) ctx.scale(s, s);
+
       // Transform: translate → rotate → scale around anchor
       var ax = t.x + w * t.anchorX;
       var ay = t.y + h * t.anchorY;
@@ -744,7 +803,7 @@ export function generateCompositorScript(
       if (t.scaleX !== 1 || t.scaleY !== 1) ctx.scale(t.scaleX, t.scaleY);
       ctx.translate(-ax, -ay);
 
-      ctx.drawImage(layerOff, t.x, t.y);
+      ctx.drawImage(layerOff, t.x, t.y, w, h);
       ctx.restore();
     }
   }
@@ -753,14 +812,14 @@ export function generateCompositorScript(
   // layer updates can restore the clean sketch output before re-compositing.
   var __cleanSnapshot = null;
 
-  // Cached DPR offscreen to avoid allocation per frame
-  var __dprOffscreen = null;
-
-  // Composite layers, handling DPR mismatch between physical canvas size
-  // and logical layer dimensions. Pixel-manipulation renderers (getImageData/
-  // putImageData) bypass canvas transforms, so when canvas.width > logical
-  // width (e.g. retina 2x), we composite via an offscreen canvas at logical
-  // resolution and then draw the result back scaled to physical size.
+  // Composite layers at the canvas's physical size (ADR 111).
+  //
+  // Pixel-manipulation renderers bypass canvas transforms, so this used to
+  // composite the whole picture into a logical-size offscreen and draw that
+  // up, which cost every layer — and the sketch's own drawing — its detail
+  // above 1x. Now the scale is carried per layer: types declaring
+  // resolution: "device" work on the physical grid, and the rest are drawn up
+  // one layer at a time, exactly as soft as they used to be and no softer.
   function __renderLayers(canvas, ctx) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     // Use explicitly provided logical dimensions; fall back to canvas pixel size.
@@ -775,23 +834,49 @@ export function generateCompositorScript(
     __maskSourceIds = __collectMaskSourceIds(__genart_layers);
     __maskStore = {};
 
-    if (canvas.width !== logW || canvas.height !== logH) {
-      if (!__dprOffscreen || __dprOffscreen.width !== logW || __dprOffscreen.height !== logH) {
-        __dprOffscreen = new OffscreenCanvas(logW, logH);
+    __scale = logW > 0 ? canvas.width / logW : 1;
+
+    // The pass picks one resolution before it starts. A layer that reads the
+    // composite in logical units cannot work on a device-resolution canvas,
+    // and compositing the layers under it at device size only to copy them
+    // down again costs detail rather than adding it (measured: an extra round
+    // trip on quarry-face, RMSE 0.0147 against the old pipeline and visibly
+    // softer). So one such layer anywhere in the stack puts the whole pass on
+    // the logical canvas, which is what every pass used to do. When a stack's
+    // read-composite types all declare resolution: "device", the pass stays
+    // physical and the picture keeps the resolution it was rendered at.
+    var logical = false;
+    if (__scale !== 1) {
+      for (var k = 0; k < __genart_layers.length; k++) {
+        if (__needsLogicalComposite(__genart_layers[k])) { logical = true; break; }
       }
-      var offCtx = __dprOffscreen.getContext("2d");
-      offCtx.clearRect(0, 0, logW, logH);
-      offCtx.drawImage(canvas, 0, 0, logW, logH);
-      for (var j = 0; j < __genart_layers.length; j++) {
-        compositeLayer(__genart_layers[j], offCtx);
+    }
+
+    if (logical) {
+      var logicalOff = new OffscreenCanvas(logW, logH);
+      var lctx = logicalOff.getContext("2d");
+      lctx.drawImage(canvas, 0, 0, logW, logH);
+      __scale = 1;
+
+      for (var m = 0; m < __genart_layers.length; m++) {
+        compositeLayer(__genart_layers[m], lctx);
       }
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(__dprOffscreen, 0, 0, canvas.width, canvas.height);
+
+      // Hand the backing store back at logical size. The element keeps its CSS
+      // size, so whatever displays or captures it enlarges the result exactly
+      // once, the way it did before the canvas was sized up.
+      canvas.width = logW;
+      canvas.height = logH;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, logW, logH);
+      ctx.drawImage(logicalOff, 0, 0);
     } else {
       for (var j = 0; j < __genart_layers.length; j++) {
         compositeLayer(__genart_layers[j], ctx);
       }
     }
+
+    __scale = 1;
   }
 
   window.__genart_compositeLayers = function(canvas) {

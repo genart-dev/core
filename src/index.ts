@@ -21,6 +21,7 @@ export type {
   RuntimeDependency,
   CaptureOptions,
   RendererAdapter,
+  StandaloneHtmlOptions,
   SketchInstance,
 } from "./types.js";
 
