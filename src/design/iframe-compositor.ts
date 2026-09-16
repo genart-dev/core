@@ -62,7 +62,9 @@ export function generateCompositorScript(
   }
 
   // --- Shape helpers ---
-  function applyShapeStyle(props, ctx) {
+  // scale = device pixels per layout unit (ADR 111); a stroke width is a length.
+  function applyShapeStyle(props, ctx, scale) {
+    var sc = scale || 1;
     var fillEnabled = props.fillEnabled !== undefined ? props.fillEnabled : true;
     var strokeEnabled = props.strokeEnabled !== undefined ? props.strokeEnabled : false;
     if (fillEnabled) {
@@ -73,7 +75,7 @@ export function generateCompositorScript(
       var sw = props.strokeWidth || 0;
       if (sw > 0) {
         ctx.strokeStyle = props.strokeColor || "#000000";
-        ctx.lineWidth = sw;
+        ctx.lineWidth = sw * sc;
         ctx.stroke();
       }
     }
@@ -133,7 +135,7 @@ export function generateCompositorScript(
 
   // --- shapes:rect ---
   function renderRect(ctx, props, b) {
-    var cr = props.cornerRadius || 0;
+    var cr = (props.cornerRadius || 0) * (b.scale || 1);
     ctx.save();
     ctx.beginPath();
     if (cr > 0) {
@@ -142,7 +144,7 @@ export function generateCompositorScript(
     } else {
       ctx.rect(b.x, b.y, b.width, b.height);
     }
-    applyShapeStyle(props, ctx);
+    applyShapeStyle(props, ctx, b.scale);
     ctx.restore();
   }
 
@@ -153,14 +155,15 @@ export function generateCompositorScript(
     ctx.save();
     ctx.beginPath();
     ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-    applyShapeStyle(props, ctx);
+    applyShapeStyle(props, ctx, b.scale);
     ctx.restore();
   }
 
   // --- shapes:line ---
   function renderLine(ctx, props, b) {
+    var lsc = b.scale || 1;
     var color = props.strokeColor || "#ffffff";
-    var width = props.strokeWidth || 2;
+    var width = (props.strokeWidth || 2) * lsc;
     var cap = props.lineCap || "round";
     var dashStr = props.dashPattern || "";
     ctx.save();
@@ -171,7 +174,7 @@ export function generateCompositorScript(
     ctx.lineWidth = width;
     ctx.lineCap = cap;
     if (dashStr) {
-      var dashes = dashStr.split(",").map(Number).filter(function(n) { return !isNaN(n) && n > 0; });
+      var dashes = dashStr.split(",").map(Number).filter(function(n) { return !isNaN(n) && n > 0; }).map(function(n) { return n * lsc; });
       if (dashes.length > 0) ctx.setLineDash(dashes);
     }
     ctx.stroke();
@@ -199,7 +202,7 @@ export function generateCompositorScript(
     ctx.moveTo(pts[0].x, pts[0].y);
     for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.closePath();
-    applyShapeStyle(props, ctx);
+    applyShapeStyle(props, ctx, b.scale);
     ctx.restore();
   }
 
@@ -228,14 +231,16 @@ export function generateCompositorScript(
     ctx.moveTo(verts[0].x, verts[0].y);
     for (var i = 1; i < verts.length; i++) ctx.lineTo(verts[i].x, verts[i].y);
     ctx.closePath();
-    applyShapeStyle(props, ctx);
+    applyShapeStyle(props, ctx, b.scale);
     ctx.restore();
   }
 
   // --- typography:text ---
   function renderText(ctx, props, b) {
     var text = props.text || ""; if (!text) return;
-    var fontSize = props.fontSize || 48;
+    // Device pixels per layout unit (ADR 111): type is measured on the paper.
+    var tsc = b.scale || 1;
+    var fontSize = (props.fontSize || 48) * tsc;
     var fontFamily = props.fontFamily || "Inter";
     var fontWeight = props.fontWeight || "400";
     var fontStyle = props.fontStyle || "normal";
@@ -245,12 +250,12 @@ export function generateCompositorScript(
     var lineHeight = props.lineHeight || 1.2;
     var strokeEnabled = props.strokeEnabled || false;
     var strokeColor = props.strokeColor || "#000000";
-    var strokeWidth = props.strokeWidth || 2;
+    var strokeWidth = (props.strokeWidth || 2) * tsc;
     var shadowEnabled = props.shadowEnabled || false;
     var shadowColor = props.shadowColor || "rgba(0,0,0,0.5)";
-    var shadowBlur = props.shadowBlur || 4;
-    var shadowOffsetX = props.shadowOffsetX || 2;
-    var shadowOffsetY = props.shadowOffsetY || 2;
+    var shadowBlur = (props.shadowBlur || 4) * tsc;
+    var shadowOffsetX = (props.shadowOffsetX || 2) * tsc;
+    var shadowOffsetY = (props.shadowOffsetY || 2) * tsc;
 
     ctx.save();
     ctx.font = fontStyle + " " + fontWeight + " " + fontSize + "px " + resolveFontStack(fontFamily);

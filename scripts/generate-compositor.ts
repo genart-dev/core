@@ -72,6 +72,31 @@ const LEGACY_READS_COMPOSITE = [
   "filter:blur",
 ];
 
+/**
+ * Types whose renderer lives in `iframe-compositor.ts` rather than in the
+ * plugin, AND whose implementation there honours `bounds.scale` (ADR 111).
+ *
+ * A type in EXISTING_TYPES is rendered by the compositor's own code, so
+ * declaring `resolution: "device"` in its plugin marks the type without
+ * changing a single line of what actually draws it. That has been missed
+ * twice: once for the filters, once for text and the basic shapes, and both
+ * times it showed up as marks at half their size in a 2x render. Generation
+ * fails if a hardcoded type declares device resolution and is not listed here.
+ */
+const SCALE_AWARE_BUILTINS = new Set([
+  "shapes:rect",
+  "shapes:ellipse",
+  "shapes:line",
+  "shapes:polygon",
+  "shapes:star",
+  "typography:text",
+  "filter:vignette",
+  "filter:blur",
+  "filter:grain",
+  "filter:duotone",
+  "filter:chromatic-aberration",
+]);
+
 /** Plugin directories to scan (order doesn't matter) */
 const PLUGIN_DIRS = [
   "plugin-compositing",
@@ -340,6 +365,26 @@ function writeContracts(): void {
     .filter((c) => c.resolution === "device")
     .map((c) => c.typeId)
     .sort();
+
+  const unscaledBuiltins = contracts
+    .filter(
+      (c) =>
+        c.resolution === "device" &&
+        EXISTING_TYPES.has(c.typeId) &&
+        !SCALE_AWARE_BUILTINS.has(c.typeId),
+    )
+    .map((c) => c.typeId);
+  if (unscaledBuiltins.length > 0) {
+    console.error(
+      `\n  ERROR: ${unscaledBuiltins.length} type(s) declare resolution: "device" but are ` +
+        `rendered by the compositor's own hardcoded implementation, which has not been ` +
+        `made scale-aware. Their marks would come out at the wrong size:\n` +
+        unscaledBuiltins.map((t) => `    - ${t}`).join("\n") +
+        `\n\n  Scale the renderer in src/design/iframe-compositor.ts, then add the type to ` +
+        `SCALE_AWARE_BUILTINS in this script.\n`,
+    );
+    process.exit(1);
+  }
 
   const declared = new Set(readsComposite);
   const undeclared = LEGACY_READS_COMPOSITE.filter((t) => !declared.has(t));
