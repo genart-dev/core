@@ -29,6 +29,8 @@ export type {
   DesignPlugin,
   LayerTypeDefinition,
   LayerCategory,
+  LayerReads,
+  LayerResolution,
   LayerPropertySchema,
   LayerPropertyType,
   LayerPropertyValue,

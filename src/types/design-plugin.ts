@@ -37,6 +37,30 @@ export interface LayerTypeDefinition {
   readonly icon: string;
   readonly category: LayerCategory;
   readonly properties: LayerPropertySchema[];
+  /**
+   * Whether this layer type needs the pixels already on the canvas (ADR 111).
+   *
+   * `"composite"` types are rendered straight onto the composite context, so
+   * `getImageData` returns what earlier layers drew. A type that reads the
+   * canvas and does not declare this is handed a blank per-layer offscreen and
+   * silently draws nothing. Declare it if the type ever reads, including
+   * conditionally (wet mixing, blend passes).
+   *
+   * Default: `"none"` — rendered into its own offscreen buffer.
+   */
+  readonly reads?: LayerReads;
+  /**
+   * The pixel grid this layer type expects (ADR 111).
+   *
+   * `"logical"` types are rendered into a buffer sized in layout units and
+   * scaled up to the device grid, so they soften when the canvas is rendered
+   * above 1x. `"device"` types are handed a device-resolution buffer and must
+   * size their own `ImageData` from `bounds.deviceWidth`/`deviceHeight` and
+   * divide any per-pixel frequency (grain, tooth, noise) by `bounds.scale`.
+   *
+   * Default: `"logical"`.
+   */
+  readonly resolution?: LayerResolution;
   createDefault(): LayerProperties;
   render(
     properties: LayerProperties,
@@ -57,6 +81,12 @@ export interface LayerTypeDefinition {
   ): void;
   readonly propertyEditorId: string;
 }
+
+/** What a layer type reads from the canvas it is handed. See ADR 111. */
+export type LayerReads = "composite" | "none";
+
+/** The pixel grid a layer type expects to draw on. See ADR 111. */
+export type LayerResolution = "logical" | "device";
 
 export type LayerCategory =
   | "text"
@@ -160,6 +190,16 @@ export interface LayerBounds {
   readonly rotation: number;
   readonly scaleX: number;
   readonly scaleY: number;
+  /**
+   * Device pixels per layout unit (ADR 111). 1 when the canvas is rendered at
+   * its logical size. Only layer types declaring `resolution: "device"` are
+   * handed a value other than 1; everything else keeps a logical-unit grid.
+   */
+  readonly scale?: number;
+  /** Layer width in device pixels: `ceil(width * scale)`. See ADR 111. */
+  readonly deviceWidth?: number;
+  /** Layer height in device pixels: `ceil(height * scale)`. See ADR 111. */
+  readonly deviceHeight?: number;
 }
 
 export interface ValidationError {

@@ -13,6 +13,7 @@
 
 import type { DesignLayer } from "@genart-dev/format";
 import { GENERATED_RENDERERS_CODE } from "./generated-renderers/index.js";
+import { READS_COMPOSITE_TYPES } from "./generated-renderers/contracts.js";
 
 /**
  * Generate a self-contained `<script>` block that composites design layers
@@ -564,14 +565,13 @@ export function generateCompositorScript(
   // because that doubles the original content (once on canvas, once in the
   // offscreen copy). Instead they render directly and opacity is applied via
   // pixel-level lerp between original and modified.
-  var MODIFIER_TYPES = {
-    "painting:watercolor": 1, "painting:charcoal": 1, "painting:ink": 1,
-    "painting:fill": 1, "painting:stroke": 1, "painting:scene": 1,
-    "painting:bristle-dab": 1, "painting:bristle-stroke": 1,
-    "adjust:hsl": 1, "adjust:levels": 1, "adjust:curves": 1,
-    "filter:grain": 1, "filter:chromatic-aberration": 1,
-    "filter:duotone": 1, "filter:blur": 1
-  };
+  //
+  // Generated from each plugin's own reads: "composite" declarations (ADR 111).
+  // This was a hand-written table, and every type missing from it read a blank
+  // buffer and drew nothing.
+  var MODIFIER_TYPES = ${JSON.stringify(
+    Object.fromEntries(READS_COMPOSITE_TYPES.map((t) => [t, 1])),
+  )};
 
   // OffscreenCanvas cache — avoids per-frame allocation for additive layers.
   // Keyed by "layerId:WxH" so each layer reuses its own canvas.
