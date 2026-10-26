@@ -30,13 +30,14 @@ describe("generateInteractivePanel", () => {
   it("includes seed controls", () => {
     const { html } = generateInteractivePanel(makeSketch());
     expect(html).toContain('id="gp-seed-val"');
+    expect(html).toContain("__gp_seedPrev");
+    expect(html).toContain("__gp_seedNext");
     expect(html).toContain("__gp_seedRandom");
-    expect(html).toContain("reseed");
   });
 
   it("sets initial seed value", () => {
     const { html } = generateInteractivePanel(makeSketch({ state: { seed: 1234, params: {}, colorPalette: [] } }));
-    expect(html).toContain(">1234<");
+    expect(html).toMatch(/id="gp-seed-val" value="1234"/);
   });
 
   it("generates parameter sliders from ParamDef[]", () => {
@@ -48,8 +49,8 @@ describe("generateInteractivePanel", () => {
       state: { seed: 42, params: { density: 50, speed: 1 }, colorPalette: [] },
     });
     const { html } = generateInteractivePanel(sketch);
-    expect(html).toContain('id="gp-param-density"');
-    expect(html).toContain('id="gp-param-speed"');
+    expect(html).toContain('id="gp-pi-density"');
+    expect(html).toContain('id="gp-pi-speed"');
     expect(html).toContain("Density");
     expect(html).toContain("Speed");
     expect(html).toContain('min="1"');
@@ -65,14 +66,13 @@ describe("generateInteractivePanel", () => {
       state: { seed: 42, params: {}, colorPalette: ["#1a1a1a", "#ffffff"] },
     });
     const { html } = generateInteractivePanel(sketch);
-    expect(html).toContain('id="gp-color-0"');
-    expect(html).toContain('id="gp-color-1"');
-    expect(html).toContain("Background");
-    expect(html).toContain("Foreground");
+    expect(html).toContain('id="gp-ci-0"');
+    expect(html).toContain('id="gp-ci-1"');
     expect(html).toContain('value="#1a1a1a"');
+    expect(html).toContain('value="#ffffff"');
   });
 
-  it("generates theme dropdown when themes exist", () => {
+  it("generates a theme button per theme when themes exist", () => {
     const sketch = makeSketch({
       colors: [{ key: "bg", label: "BG", default: "#000" }],
       themes: [
@@ -82,24 +82,24 @@ describe("generateInteractivePanel", () => {
       state: { seed: 42, params: {}, colorPalette: ["#000000"] },
     });
     const { html } = generateInteractivePanel(sketch);
-    expect(html).toContain('id="gp-theme"');
-    expect(html).toContain("Dark");
-    expect(html).toContain("Light");
+    expect(html).toContain("__gp_themeChange(0)");
+    expect(html).toContain("__gp_themeChange(1)");
+    expect(html).toContain("background:#ffffff");
   });
 
-  it("omits theme dropdown when no themes", () => {
+  it("omits theme buttons when no themes", () => {
     const { html } = generateInteractivePanel(makeSketch());
-    expect(html).not.toContain('id="gp-theme"');
+    expect(html).not.toContain("gp-theme-btn");
   });
 
   it("omits parameter section when no parameters", () => {
     const { html } = generateInteractivePanel(makeSketch({ parameters: [] }));
-    expect(html).not.toContain("gp-param-");
+    expect(html).not.toContain("gp-pi-");
   });
 
   it("omits color section when no colors", () => {
     const { html } = generateInteractivePanel(makeSketch({ colors: [] }));
-    expect(html).not.toContain("gp-color-");
+    expect(html).not.toContain("gp-ci-");
   });
 
   it("includes Copy State button", () => {
